@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malomerdő — Elszámoló</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#26352B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Elszámoló">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3EFE4; --paper:#FBF9F3; --forest:#26352B; --forest-2:#3C4F3F;
+    --gold:#B9873E; --gold-soft:#E7D2A4; --ink:#2A2418; --ink-soft:#6B6455;
+    --line:#DFD8C4; --danger:#A6493A; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;padding-bottom:120px;}
+  header{background:var(--forest);color:var(--paper);padding:20px 18px 0;}
+  header h1{font-family:'Lora',serif;font-weight:600;font-size:1.3rem;margin:0 0 4px;}
+  header p{margin:0 0 14px;color:var(--gold-soft);font-size:0.82rem;}
+  .tabs{display:flex;gap:4px;}
+  .tab-btn{flex:1;padding:11px;background:rgba(255,255,255,0.08);color:var(--gold-soft);border:none;border-radius:8px 8px 0 0;font-family:'Inter',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;}
+  .tab-btn.active{background:var(--bg);color:var(--forest);}
+  main{max-width:720px;margin:0 auto;padding:16px;}
+  details.settings{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;}
+  details.settings summary{cursor:pointer;padding:12px 14px;font-weight:600;font-size:0.92rem;list-style:none;display:flex;justify-content:space-between;align-items:center;}
+  details.settings summary::-webkit-details-marker{display:none;}
+  details.settings summary::after{content:"▾ megnyit";font-weight:400;color:var(--ink-soft);font-size:0.78rem;}
+  details.settings[open] summary::after{content:"▴ bezár";}
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;padding:0 14px 14px;}
+  .settings-grid label{font-size:0.72rem;color:var(--ink-soft);display:block;margin-bottom:2px;}
+  .settings-grid input,.settings-grid select{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;font-family:'Inter',sans-serif;}
+  .bracket-row{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;padding:6px 14px;align-items:end;}
+  .bracket-row .lbl{font-size:0.78rem;color:var(--ink);align-self:center;}
+  .catalog-section{padding:0 14px 14px;}
+  .catalog-row{display:grid;grid-template-columns:1fr 90px 70px 26px;gap:6px;margin-bottom:6px;}
+  .catalog-row input,.catalog-row select{padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.82rem;}
+  .catalog-row .rm{background:none;border:none;color:var(--danger);font-size:1.05rem;cursor:pointer;}
+  .add-item{background:none;border:1px dashed var(--gold);color:var(--forest-2);border-radius:6px;padding:7px;width:100%;font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;margin-top:2px;}
+  .add-btn{display:block;width:100%;padding:13px;background:var(--forest);color:var(--paper);border:none;border-radius:var(--radius);font-size:0.95rem;font-weight:600;cursor:pointer;margin-bottom:16px;font-family:'Inter',sans-serif;}
+  .group-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .group-toolbar button{flex:1;min-width:140px;padding:9px;border:1px solid var(--gold);background:transparent;color:var(--forest);border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+  .room-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;}
+  .room-card.grouped{border-left:5px solid var(--gold);}
+  .room-head{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#F3EEDF;border-bottom:1px solid var(--line);}
+  .room-head input.label{flex:1;border:none;background:transparent;font-family:'Lora',serif;font-weight:600;font-size:1rem;color:var(--forest);padding:2px 0;}
+  .room-head .badge{font-size:0.68rem;background:var(--gold);color:#fff;padding:2px 7px;border-radius:20px;white-space:nowrap;}
+  .room-body{padding:12px 14px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:10px;}
+  .field-row > *{min-width:0;}
+  .field-row.three{grid-template-columns:1fr 1fr 1fr;}
+  .field-row.four{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .field{display:flex;flex-direction:column;min-width:0;}
+  .field label{font-size:0.7rem;color:var(--ink-soft);margin-bottom:3px;}
+  .field select,.field input{padding:8px;border:1px solid var(--line);border-radius:7px;font-size:0.88rem;font-family:'Inter',sans-serif;background:#fff;width:100%;min-width:0;}
+  .checkline{display:flex;align-items:center;gap:7px;font-size:0.83rem;margin:6px 0 4px;}
+  .checkline input{width:16px;height:16px;}
+  .subtotal-line{display:flex;justify-content:space-between;font-size:0.83rem;padding:3px 0;color:var(--ink-soft);}
+  .subtotal-line.total{color:var(--ink);font-weight:700;border-top:1px dashed var(--line);margin-top:6px;padding-top:7px;font-size:0.9rem;}
+  .consumption{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;}
+  .consumption h4{margin:0 0 8px;font-size:0.8rem;color:var(--forest-2);font-weight:700;}
+  details.quickadd summary{cursor:pointer;font-size:0.8rem;color:var(--forest-2);font-weight:600;margin-bottom:8px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+  .chip{background:#fff;border:1px solid var(--gold);color:var(--forest);border-radius:20px;padding:6px 11px;font-size:0.76rem;cursor:pointer;font-family:'Inter',sans-serif;}
+  .chip:active{background:var(--gold-soft);}
+  .grouplbl{font-size:0.72rem;color:var(--ink-soft);margin:8px 0 4px;}
+  .item-row{display:grid;grid-template-columns:1fr 46px 66px 24px;gap:6px;margin-bottom:6px;align-items:center;}
+  .item-row input{padding:7px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;font-family:'Inter',sans-serif;}
+  .item-row .rm{background:none;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;text-align:center;}
+  .item-block{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px;background:#fff;}
+  .item-row-name{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+  .item-row-name input{flex:1;min-width:0;padding:7px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;font-family:'Inter',sans-serif;}
+  .item-row-name .rm{flex-shrink:0;background:none;border:none;color:var(--danger);font-size:1.15rem;cursor:pointer;padding:2px 4px;}
+  .item-row-calc{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:0.82rem;color:var(--ink-soft);}
+  .item-row-calc input{width:56px;min-width:0;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;font-family:'Inter',sans-serif;text-align:center;}
+  .item-row-calc .op{white-space:nowrap;}
+  .item-row-calc .linetotal{margin-left:auto;font-weight:700;color:var(--forest);white-space:nowrap;}
+  .room-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#F3EEDF;border-top:1px solid var(--line);}
+  .room-foot .del{background:none;border:none;color:var(--danger);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;}
+  .room-foot .rtotal{font-weight:700;color:var(--forest);font-size:0.98rem;}
+  .group-block{background:#EFE6CE;border:1px solid var(--gold);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;}
+  .group-block .gname{font-family:'Lora',serif;font-weight:600;color:var(--forest);margin-bottom:6px;display:flex;justify-content:space-between;}
+  .group-block .gname button{background:none;border:none;color:var(--danger);font-size:0.75rem;cursor:pointer;}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:0.9rem;}
+  .note{background:#EFE6CE;border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--forest-2);margin-bottom:14px;}
+  .summary-bar{position:fixed;bottom:0;left:0;right:0;background:var(--forest);color:var(--paper);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -4px 14px rgba(0,0,0,0.2);}
+  .summary-bar .label{font-size:0.75rem;color:var(--gold-soft);}
+  .summary-bar .value{font-family:'Lora',serif;font-size:1.3rem;font-weight:700;}
+  .pkg-row{display:grid;grid-template-columns:1fr 90px 40px 66px 24px;gap:6px;margin-bottom:4px;align-items:center;}
+  .pkg-row input,.pkg-row select{padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.8rem;}
+  .hours-field{max-width:150px;margin:0 0 10px;}
+  .hours-field label{font-size:0.68rem;color:var(--ink-soft);}
+  .hours-field input{width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.82rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Malomerdő — Elszámoló</h1>
+  <p>Szobák, étkezés, fogyasztás és esküvők egy helyen</p>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabRoomsBtn" onclick="setTab('rooms')">Szoba</button>
+    <button class="tab-btn" id="tabTablesBtn" onclick="setTab('tables')">Étterem</button>
+    <button class="tab-btn" id="tabWeddingBtn" onclick="setTab('wedding')">Esküvő</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ===================== SZOBA FÜL ===================== -->
+<div id="roomsPage">
+
+  <details class="settings">
+    <summary>Alapárak</summary>
+    <div class="settings-grid" id="settingsGrid"></div>
+    <div style="padding:4px 14px 4px;font-size:0.75rem;color:var(--ink-soft);">Gyerek szállás- és étkezéskedvezmény korcsoportonként (a hivatalos árajánlat alapján)</div>
+    <div id="bracketRows"></div>
+  </details>
+
+  <details class="settings">
+    <summary>Itallap / árlista</summary>
+    <div class="catalog-section">
+      <div id="catalogRows"></div>
+      <button class="add-item" onclick="addCatalogItem()">+ Új tétel az árlistába</button>
+    </div>
+  </details>
+
+  <button class="add-btn" onclick="addRoom()">+ Új szoba / vendégcsoport hozzáadása</button>
+
+  <div class="group-toolbar">
+    <button onclick="mergeSelected()">Kijelöltek összevonása egy számlára</button>
+    <button onclick="clearSelection()">Kijelölés törlése</button>
+  </div>
+
+  <div id="groupsContainer"></div>
+  <div id="roomsContainer"></div>
+</div>
+
+<!-- ===================== ÉTTEREM FÜL ===================== -->
+<div id="tablesPage" style="display:none;">
+
+  <div class="note">
+    Betérő vendégeknek és asztaltársaságoknak — nem szállnak meg, csak esznek-isznak és fizetnek. Adj hozzá egy asztalt, koppints az itallapból/menüből a tételekre, a végén nézd meg az összeget.
+  </div>
+
+  <button class="add-btn" onclick="addTable()">+ Új asztal / vendég hozzáadása</button>
+
+  <div id="tablesContainer"></div>
+</div>
+
+<!-- ===================== ESKÜVŐ FÜL ===================== -->
+<div id="weddingPage" style="display:none;">
+
+  <details class="settings">
+    <summary>Esküvői tételek / árak kezelése</summary>
+    <div class="catalog-section">
+      <div id="weddingCatalogRows"></div>
+      <button class="add-item" onclick="addWeddingCatalogItem()">+ Új esküvői tétel</button>
+    </div>
+  </details>
+
+  <button class="add-btn" onclick="addWedding()">+ Új esküvői társaság hozzáadása</button>
+
+  <div id="weddingsContainer"></div>
+</div>
+
+</main>
+
+<div class="summary-bar">
+  <div>
+    <div class="label" id="summaryLabel">Mindösszesen</div>
+    <div class="value" id="grandTotal">0 Ft</div>
+  </div>
+  <div style="text-align:right;">
+    <div class="label" id="countLabel">0 tétel</div>
+  </div>
+</div>
+
+<script>
+// ---------------- állapot ----------------
+let currentTab = 'rooms';
+
+let prices = {
+  vadaszkastely: 12000,
+  parasztaz: 14000,
+  egyagyasAr: 18000,
+  ifa: 400,
+  reggeli: 4000,
+  ebed: 6900,
+  vacsora2: 6500,
+  vacsora3: 8000
+};
+
+// hivatalos szállás-ajánlat szerinti gyerek-sávok (Ft/fő/éj), étkezés % külön állítható
+let gyerekBracket = {
+  '0-4':   { label:'0–4 éves korig (szülő szobájában)', szallasFt:0,    etkezesSzazalek:0  },
+  '4-11':  { label:'4–11 éves korig (szülő szobájában)', szallasFt:6900, etkezesSzazalek:70 },
+  '12-17': { label:'12–17 éves korig (szülő szobájában)', szallasFt:9900, etkezesSzazalek:70 }
+};
+
+let catalog = [
+  { id:'i1',  category:'ital', name:'Szénsavas üdítő 0,25l (Pepsi Cola/Pepsi Max/Schweppes Narancs/Canada Dry/Tonic)', price:800 },
+  { id:'i2',  category:'ital', name:'Pesti Máté (mate tea) 0,33l', price:1500 },
+  { id:'i3',  category:'ital', name:'Gyümölcslé 0,25l (Narancs/Alma/Őszibarack)', price:800 },
+  { id:'i4',  category:'ital', name:'Ásványvíz 0,33l (szénsavas/mentes)', price:700 },
+  { id:'i5',  category:'ital', name:'Mayer szörp 0,4l', price:750 },
+  { id:'i6',  category:'ital', name:'Mayer szörp 1l', price:1500 },
+  { id:'i7',  category:'ital', name:'Limonádé 0,5l', price:1400 },
+  { id:'i8',  category:'ital', name:'Dreher Gold 0,5l', price:1100 },
+  { id:'i9',  category:'ital', name:'Dreher Gold 0,33l', price:900 },
+  { id:'i10', category:'ital', name:'Dreher 0% 0,33l', price:900 },
+  { id:'i11', category:'ital', name:'Peroni 0,33l', price:1000 },
+  { id:'i12', category:'ital', name:'1664 Blanc búzasör 0,33l', price:1000 },
+  { id:'i13', category:'ital', name:'Hübris kézműves gyümölcsös sör 0,33l', price:1400 },
+  { id:'i14', category:'ital', name:'Gösser Natur Zitrone alkoholmentes 0,33l', price:900 },
+  { id:'i15', category:'ital', name:'Paulus Olaszrizling 0,1l', price:600 },
+  { id:'i16', category:'ital', name:'Paulus Irsai Olivér 0,1l', price:600 },
+  { id:'i17', category:'ital', name:'Paulus Gold Rosé 0,1l', price:700 },
+  { id:'i18', category:'ital', name:'Paulus Red Selection (vörös) 0,1l', price:800 },
+  { id:'i19', category:'ital', name:'Paulus Extra Dry pezsgő 0,75l', price:3600 },
+  { id:'i20', category:'ital', name:'Paulus Secco pezsgő 0,75l', price:3200 },
+  { id:'i21', category:'ital', name:"Bailey's 2cl", price:900 },
+  { id:'i22', category:'ital', name:"Bailey's 4cl", price:1500 },
+  { id:'i23', category:'ital', name:'Beefeater Gin 2cl', price:900 },
+  { id:'i24', category:'ital', name:'Beefeater Gin 4cl', price:1500 },
+  { id:'i25', category:'ital', name:'Finlandia 2cl', price:900 },
+  { id:'i26', category:'ital', name:'Finlandia 4cl', price:1500 },
+  { id:'i27', category:'ital', name:'Bacardi 2cl', price:900 },
+  { id:'i28', category:'ital', name:'Bacardi 4cl', price:1500 },
+  { id:'i29', category:'ital', name:'Jägermeister 2cl', price:900 },
+  { id:'i30', category:'ital', name:'Jägermeister 4cl', price:1500 },
+  { id:'i31', category:'ital', name:'Unicum Classic 2cl', price:900 },
+  { id:'i32', category:'ital', name:'Unicum Classic 4cl', price:1500 },
+  { id:'i33', category:'ital', name:"Jack Daniel's 2cl", price:900 },
+  { id:'i34', category:'ital', name:"Jack Daniel's 4cl", price:1500 },
+  { id:'i35', category:'ital', name:'Johnnie Walker Red 2cl', price:900 },
+  { id:'i36', category:'ital', name:'Johnnie Walker Red 4cl', price:1500 },
+  { id:'i37', category:'ital', name:'Jameson 2cl', price:900 },
+  { id:'i38', category:'ital', name:'Jameson 4cl', price:1500 },
+  { id:'i39', category:'ital', name:'Diplomatico 2cl', price:1300 },
+  { id:'i40', category:'ital', name:'Diplomatico 4cl', price:1700 },
+  { id:'i41', category:'ital', name:'Árpád pálinka (birs, kajszi) 2cl', price:1500 },
+  { id:'i42', category:'ital', name:'Árpád pálinka (birs, kajszi) 4cl', price:2000 },
+  { id:'i43', category:'ital', name:'Árpád pálinka (gyömbér) 2cl', price:1700 },
+  { id:'i44', category:'ital', name:'Árpád pálinka (gyömbér) 4cl', price:2200 },
+  { id:'i45', category:'ital', name:'Presszó kávé', price:600 },
+  { id:'i46', category:'ital', name:'Hosszú kávé', price:600 },
+  { id:'i47', category:'ital', name:'Cortado', price:700 },
+  { id:'i48', category:'ital', name:'Cappuccino', price:800 },
+  { id:'i49', category:'ital', name:'Latte', price:900 },
+  { id:'i50', category:'ital', name:'Jeges kávé', price:1000 },
+  { id:'i51', category:'ital', name:'Alternatív tej (felár)', price:200 },
+  { id:'et1', category:'etel', name:'Bekészítés (kávé, ásványvíz, üdítő, pogácsa)', price:3900 },
+  { id:'et2', category:'etel', name:'Sültes tál I', price:6000 },
+  { id:'et3', category:'etel', name:'Sültes tál II', price:7000 },
+  { id:'et4', category:'etel', name:'Leves — Falusi húsleves gazdagon', price:2000 },
+  { id:'et5', category:'etel', name:'Leves — Marha gulyásleves csipetkével', price:2500 },
+  { id:'et6', category:'etel', name:'Desszert — Csokoládé brownie eper velő', price:2000 },
+  { id:'et7', category:'etel', name:'Desszert — Almás rétes vanília öntet', price:2000 },
+  { id:'et8', category:'etel', name:'Napi menü (ebéd)', price:0 },
+  { id:'e1',  category:'egyeb', name:'Zsíroskenyér', price:0 }
+];
+
+// esküvői tételek: multiplier = 'flat' | 'perFo' (fő szerint) | 'perFoOra' (fő × óra) — csak tisztán esküvői tételek
+let weddingCatalog = [
+  { id:'wv1', csoport:'vacsora',    name:'Esküvői Vacsora All Inclusive — Felnőtt', price:29500, multiplier:'perFo', hours:1 },
+  { id:'wv2', csoport:'vacsora',    name:'Esküvői Vacsora All Inclusive — Gyermek 1 év alatt', price:0, multiplier:'perFo', hours:1 },
+  { id:'wv3', csoport:'vacsora',    name:'Esküvői Vacsora All Inclusive — Gyermek 1–6 év', price:9900, multiplier:'perFo', hours:1 },
+  { id:'wv4', csoport:'vacsora',    name:'Esküvői Vacsora All Inclusive — Gyermek 7–12 év', price:15900, multiplier:'perFo', hours:1 },
+  { id:'wv5', csoport:'vacsora',    name:'Esküvői Vacsora All Inclusive — Szolgáltató', price:19900, multiplier:'perFo', hours:1 },
+  { id:'we1', csoport:'kiegeszito', name:'Terembérleti díj (≤50 fő esetén)', price:50000, multiplier:'flat', hours:1 },
+  { id:'we2', csoport:'kiegeszito', name:'Szertartás csomag (Hidas / Parasztház előtti)', price:50000, multiplier:'flat', hours:1 },
+  { id:'we3', csoport:'kiegeszito', name:'Vendégvárás (Borospince)', price:2500, multiplier:'perFoOra', hours:1 },
+  { id:'we4', csoport:'kiegeszito', name:'Reggeli (esküvő utáni reggel)', price:4000, multiplier:'perFo', hours:1 },
+  { id:'we5', csoport:'kiegeszito', name:'Morzsa Party (másnapi)', price:4000, multiplier:'perFo', hours:1 },
+  { id:'ws1', csoport:'szallas',    name:'Szállás — Vadászkastély (felnőtt)', price:12000, multiplier:'perFoEjszaka', nights:1 },
+  { id:'ws2', csoport:'szallas',    name:'Szállás — Parasztház (felnőtt)', price:14000, multiplier:'perFoEjszaka', nights:1 },
+  { id:'ws3', csoport:'szallas',    name:'Szállás — Egyágyas', price:18000, multiplier:'perFoEjszaka', nights:1 },
+  { id:'ws4', csoport:'szallas',    name:'IFA (18 év felett)', price:400, multiplier:'perFoEjszaka', nights:1 },
+  { id:'ws5', csoport:'szallas',    name:'Szállás — Gyerek 0–4 év', price:0, multiplier:'perFoEjszaka', nights:1 },
+  { id:'ws6', csoport:'szallas',    name:'Szállás — Gyerek 4–11 év', price:6900, multiplier:'perFoEjszaka', nights:1 },
+  { id:'ws7', csoport:'szallas',    name:'Szállás — Gyerek 12–17 év', price:9900, multiplier:'perFoEjszaka', nights:1 }
+];
+
+let rooms = [];
+let groups = [];
+let tables = [];
+let weddings = [];
+let roomCounter = 0;
+let tableCounter = 0;
+let weddingCounter = 0;
+let uidCounter = 0;
+function uid(p){ return p + (++uidCounter); }
+function newId(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+// ---------------- Supabase kapcsolat ----------------
+const SUPABASE_URL = 'https://ztrrsewqikflamuncurh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0cnJzZXdxaWtmbGFtdW5jdXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0ODgyMDIsImV4cCI6MjA5MzA2NDIwMn0.oKRz_se7P5wl6cYJ-V7w8ee0i2N5hFsNv90G2BhKHxw';
+function sbHeaders(extra){
+  return Object.assign({ 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }, extra || {});
+}
+async function sbUpsertUnit(tipus, id, adat){
+  try{
+    await fetch(SUPABASE_URL + '/rest/v1/elszamolo_egysegek?on_conflict=id', {
+      method:'POST',
+      headers: sbHeaders({ Prefer:'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify([{ id, tipus, adat, statusz:'aktiv', updated_at:new Date().toISOString() }])
+    });
+  }catch(e){ console.error('Mentési hiba', e); }
+}
+async function sbCloseUnit(id){
+  try{
+    await fetch(SUPABASE_URL + '/rest/v1/elszamolo_egysegek?id=eq.' + id, {
+      method:'PATCH',
+      headers: sbHeaders({ Prefer:'return=minimal' }),
+      body: JSON.stringify({ statusz:'lezart', lezarva_at:new Date().toISOString() })
+    });
+  }catch(e){ console.error('Lezárási hiba', e); }
+}
+async function sbSaveSettings(){
+  try{
+    await fetch(SUPABASE_URL + '/rest/v1/elszamolo_beallitasok?on_conflict=id', {
+      method:'POST',
+      headers: sbHeaders({ Prefer:'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify([{ id:1, adat:{ prices, gyerekBracket, catalog, weddingCatalog, groups }, updated_at:new Date().toISOString() }])
+    });
+  }catch(e){ console.error('Beállítás-mentési hiba', e); }
+}
+let _settingsTimer = null;
+function saveSettingsDebounced(){
+  clearTimeout(_settingsTimer);
+  _settingsTimer = setTimeout(sbSaveSettings, 700);
+}
+let _unitTimers = {};
+function persistUnitDebounced(kind, id){
+  const key = kind + ':' + id;
+  clearTimeout(_unitTimers[key]);
+  _unitTimers[key] = setTimeout(() => {
+    let owner, tipus;
+    if(kind === 'room'){ owner = rooms.find(r=>r.id===id); tipus='szoba'; }
+    else if(kind === 'table'){ owner = tables.find(t=>t.id===id); tipus='asztal'; }
+    else { owner = weddings.find(w=>w.id===id); tipus='eskuvo'; }
+    if(owner) sbUpsertUnit(tipus, owner.id, owner);
+  }, 500);
+}
+async function initFromSupabase(){
+  try{
+    const [unitsRes, settingsRes] = await Promise.all([
+      fetch(SUPABASE_URL + '/rest/v1/elszamolo_egysegek?statusz=eq.aktiv&select=id,tipus,adat', { headers: sbHeaders() }),
+      fetch(SUPABASE_URL + '/rest/v1/elszamolo_beallitasok?id=eq.1&select=adat', { headers: sbHeaders() })
+    ]);
+    const units = await unitsRes.json();
+    const settingsRows = await settingsRes.json();
+    if(settingsRows && settingsRows[0] && settingsRows[0].adat){
+      const s = settingsRows[0].adat;
+      if(s.prices) Object.assign(prices, s.prices);
+      if(s.gyerekBracket) Object.assign(gyerekBracket, s.gyerekBracket);
+      if(Array.isArray(s.catalog) && s.catalog.length) catalog = s.catalog;
+      if(Array.isArray(s.weddingCatalog) && s.weddingCatalog.length) weddingCatalog = s.weddingCatalog;
+      if(Array.isArray(s.groups)) groups = s.groups;
+    } else {
+      sbSaveSettings();
+    }
+    if(Array.isArray(units)){
+      units.forEach(u => {
+        const obj = Object.assign({}, u.adat, { id: u.id });
+        if(u.tipus === 'szoba') rooms.push(obj);
+        else if(u.tipus === 'asztal') tables.push(obj);
+        else if(u.tipus === 'eskuvo') weddings.push(obj);
+      });
+    }
+  }catch(e){ console.error('Betöltési hiba', e); }
+  render();
+}
+
+// ---------------- asztalok / betérő vendégek ----------------
+function addTable(){
+  tableCounter++;
+  const id = newId();
+  tables.push({ id, label: 'Asztal ' + tableCounter, consumption:[] });
+  render();
+  persistUnitDebounced('table', id);
+}
+function removeTable(id){
+  const t = tables.find(t=>t.id===id);
+  if(!confirm('Biztosan lezárod ezt az asztalt?\n\n"' + (t ? t.label : '') + '" — ez eltűnik a listából.')) return;
+  tables = tables.filter(t => t.id !== id); render();
+  sbCloseUnit(id);
+}
+function updateTable(id, field, value){
+  const t = tables.find(t=>t.id===id); if(!t) return;
+  t[field] = value; render();
+  persistUnitDebounced('table', id);
+}
+function calcTable(t){
+  const total = t.consumption.reduce((s,i)=> s + (i.qty*i.price), 0);
+  return { total };
+}
+
+// ---------------- tab váltás ----------------
+function setTab(tab){
+  currentTab = tab;
+  document.getElementById('roomsPage').style.display = tab === 'rooms' ? 'block' : 'none';
+  document.getElementById('tablesPage').style.display = tab === 'tables' ? 'block' : 'none';
+  document.getElementById('weddingPage').style.display = tab === 'wedding' ? 'block' : 'none';
+  document.getElementById('tabRoomsBtn').classList.toggle('active', tab === 'rooms');
+  document.getElementById('tabTablesBtn').classList.toggle('active', tab === 'tables');
+  document.getElementById('tabWeddingBtn').classList.toggle('active', tab === 'wedding');
+  render();
+}
+
+// ---------------- szobák ----------------
+function addRoom(){
+  roomCounter++;
+  const id = newId();
+  rooms.push({
+    id, label: 'Vendég/szoba ' + roomCounter, type:'vadaszkastely', nights:1,
+    adults:1, child0_4:0, child4_11:0, child12_17:0,
+    singleSurcharge:false, mealPlan:'none', dinnerCourses:'2',
+    selected:false, groupId:null, consumption:[]
+  });
+  render();
+  persistUnitDebounced('room', id);
+}
+function removeRoom(id){
+  const r = rooms.find(r=>r.id===id);
+  if(!confirm('Biztosan lezárod ezt a szobát/vendégcsoportot?\n\n"' + (r ? r.label : '') + '" — ez eltűnik a listából.')) return;
+  rooms = rooms.filter(r => r.id !== id); render();
+  sbCloseUnit(id);
+}
+function updateRoom(id, field, value){
+  const r = rooms.find(r => r.id === id); if(!r) return;
+  if(['nights','adults','child0_4','child4_11','child12_17'].includes(field)) value = Math.max(0, parseInt(value) || 0);
+  r[field] = value; render();
+  persistUnitDebounced('room', id);
+}
+function toggleSelect(id){ const r = rooms.find(r=>r.id===id); r.selected = !r.selected; render(); }
+function clearSelection(){ rooms.forEach(r=>r.selected=false); render(); }
+function mergeSelected(){
+  const sel = rooms.filter(r=>r.selected);
+  if(sel.length < 2){ alert('Jelölj ki legalább 2 szobát / vendégcsoportot az összevonáshoz.'); return; }
+  const gid = uid('g');
+  const name = prompt('Add meg az összevont számla nevét:', 'Összevont számla ' + (groups.length+1)) || ('Összevont számla ' + (groups.length+1));
+  groups.push({ id:gid, name });
+  sel.forEach(r => { r.groupId = gid; r.selected = false; persistUnitDebounced('room', r.id); });
+  render();
+  saveSettingsDebounced();
+}
+function ungroup(gid){
+  rooms.forEach(r => { if(r.groupId === gid){ r.groupId = null; persistUnitDebounced('room', r.id); } });
+  groups = groups.filter(g=>g.id!==gid);
+  render();
+  saveSettingsDebounced();
+}
+
+// ---------------- esküvők ----------------
+function addWedding(){
+  weddingCounter++;
+  const id = newId();
+  weddings.push({ id, label: 'Esküvő ' + weddingCounter, packageItems:[] });
+  render();
+  persistUnitDebounced('wedding', id);
+}
+function removeWedding(id){
+  const w = weddings.find(w=>w.id===id);
+  if(!confirm('Biztosan lezárod ezt az esküvőt?\n\n"' + (w ? w.label : '') + '" — ez eltűnik a listából.')) return;
+  weddings = weddings.filter(w => w.id !== id); render();
+  sbCloseUnit(id);
+}
+function updateWedding(id, field, value){
+  const w = weddings.find(w=>w.id===id); if(!w) return;
+  w[field] = value; render();
+  persistUnitDebounced('wedding', id);
+}
+function quickAddWeddingPackage(weddingId, catId){
+  const w = weddings.find(w=>w.id===weddingId);
+  const c = weddingCatalog.find(c=>c.id===catId);
+  const existing = w.packageItems.find(i => i.name.trim().toLowerCase() === c.name.trim().toLowerCase());
+  if(existing){ existing.qty += 1; } else { w.packageItems.push({ id: uid('pi'), name:c.name, price:c.price, multiplier:c.multiplier, hours:c.hours||1, nights:c.nights||1, qty:1 }); }
+  render();
+  persistUnitDebounced('wedding', weddingId);
+}
+function addCustomWeddingPackageItem(weddingId){
+  const w = weddings.find(w=>w.id===weddingId);
+  w.packageItems.push({ id: uid('pi'), name:'', price:0, multiplier:'flat', hours:1, nights:1, qty:1 });
+  render();
+  persistUnitDebounced('wedding', weddingId);
+}
+function updatePackageItem(weddingId, itemId, field, value){
+  const w = weddings.find(w=>w.id===weddingId);
+  const it = w.packageItems.find(i=>i.id===itemId);
+  if(field==='qty' || field==='price' || field==='hours' || field==='nights') value = parseFloat(value)||0;
+  it[field] = value;
+  if(field === 'name' && it.price === 0 && value.trim() !== ''){
+    const needle = value.trim().toLowerCase();
+    const match = weddingCatalog.find(c => c.name.toLowerCase().includes(needle));
+    if(match){ it.price = match.price; it.multiplier = match.multiplier; it.hours = match.hours || 1; it.nights = match.nights || 1; }
+  }
+  render();
+  persistUnitDebounced('wedding', weddingId);
+}
+function removePackageItem(weddingId, itemId){
+  const w = weddings.find(w=>w.id===weddingId);
+  w.packageItems = w.packageItems.filter(i=>i.id!==itemId);
+  render();
+  persistUnitDebounced('wedding', weddingId);
+}
+
+// ---------------- általános fogyasztás (szoba + esküvő közös) ----------------
+function getConsumptionOwner(kind, id){
+  if(kind === 'room') return rooms.find(r=>r.id===id);
+  if(kind === 'table') return tables.find(t=>t.id===id);
+  return weddings.find(w=>w.id===id);
+}
+function quickAddCatalogItem(kind, id, catId){
+  const owner = getConsumptionOwner(kind, id);
+  const c = catalog.find(c=>c.id===catId);
+  const existing = owner.consumption.find(i => i.name.trim().toLowerCase() === c.name.trim().toLowerCase());
+  if(existing){ existing.qty += 1; } else { owner.consumption.push({ id: uid('i'), name:c.name, qty:1, price:c.price }); }
+  render();
+  persistUnitDebounced(kind, id);
+}
+function addItem(kind, id){
+  const owner = getConsumptionOwner(kind, id);
+  owner.consumption.push({ id: uid('i'), name:'', qty:1, price:0 });
+  render();
+  persistUnitDebounced(kind, id);
+}
+function updateItem(kind, id, itemId, field, value){
+  const owner = getConsumptionOwner(kind, id);
+  const it = owner.consumption.find(i=>i.id===itemId);
+  if(field==='qty' || field==='price') value = parseFloat(value)||0;
+  it[field] = value;
+  if(field === 'name' && it.price === 0 && value.trim() !== ''){
+    const needle = value.trim().toLowerCase();
+    const match = catalog.find(c => c.name.toLowerCase().includes(needle));
+    if(match) it.price = match.price;
+  }
+  render();
+  persistUnitDebounced(kind, id);
+}
+function removeItem(kind, id, itemId){
+  const owner = getConsumptionOwner(kind, id);
+  owner.consumption = owner.consumption.filter(i=>i.id!==itemId);
+  render();
+  persistUnitDebounced(kind, id);
+}
+
+// ---------------- árlista (catalog) kezelés ----------------
+function addCatalogItem(){ catalog.push({ id: uid('cat'), category:'egyeb', name:'', price:0 }); render(); saveSettingsDebounced(); }
+function updateCatalogItem(id, field, value){
+  const c = catalog.find(c=>c.id===id);
+  if(field==='price') value = parseFloat(value)||0;
+  c[field] = value; render();
+  saveSettingsDebounced();
+}
+function removeCatalogItem(id){ catalog = catalog.filter(c=>c.id!==id); render(); saveSettingsDebounced(); }
+
+function addWeddingCatalogItem(){ weddingCatalog.push({ id: uid('wcat'), name:'', price:0, multiplier:'perFo', csoport:'kiegeszito', hours:1 }); render(); saveSettingsDebounced(); }
+function updateWeddingCatalogItem(id, field, value){
+  const c = weddingCatalog.find(c=>c.id===id);
+  if(field==='price' || field==='hours') value = parseFloat(value)||0;
+  c[field] = value; render();
+  saveSettingsDebounced();
+}
+function removeWeddingCatalogItem(id){ weddingCatalog = weddingCatalog.filter(c=>c.id!==id); render(); saveSettingsDebounced(); }
+
+// ---------------- számítások ----------------
+function roomBasePrice(type){ return type === 'parasztaz' ? prices.parasztaz : prices.vadaszkastely; }
+function mealPerAdultPerNight(mealPlan, dinnerCourses){
+  const vacsora = dinnerCourses === '3' ? prices.vacsora3 : prices.vacsora2;
+  if(mealPlan === 'reggeli') return prices.reggeli;
+  if(mealPlan === 'vacsora') return vacsora;
+  if(mealPlan === 'felpanzio') return prices.reggeli + vacsora;
+  if(mealPlan === 'teljes') return prices.reggeli + prices.ebed + vacsora;
+  return 0;
+}
+function calcRoom(r){
+  const base = r.singleSurcharge ? prices.egyagyasAr : roomBasePrice(r.type);
+  const szallasFelnott = r.adults * base * r.nights;
+  const szallasGyerek = ['0-4','4-11','12-17'].reduce((sum,key) => {
+    const count = key==='0-4' ? r.child0_4 : (key==='4-11' ? r.child4_11 : r.child12_17);
+    return sum + count * gyerekBracket[key].szallasFt * r.nights;
+  },0);
+  const szallas = szallasFelnott + szallasGyerek;
+  const ifa = r.adults * prices.ifa * r.nights;
+  const mealAdult = mealPerAdultPerNight(r.mealPlan, r.dinnerCourses);
+  const etkezesGyerek = ['0-4','4-11','12-17'].reduce((sum,key) => {
+    const count = key==='0-4' ? r.child0_4 : (key==='4-11' ? r.child4_11 : r.child12_17);
+    return sum + count * mealAdult * (gyerekBracket[key].etkezesSzazalek/100) * r.nights;
+  },0);
+  const etkezes = r.adults * mealAdult * r.nights + etkezesGyerek;
+  const fogyasztas = r.consumption.reduce((s,i)=> s + (i.qty*i.price), 0);
+  return { szallas, ifa, etkezes, fogyasztas, total: szallas+ifa+etkezes+fogyasztas };
+}
+function calcWedding(w){
+  const pkg = w.packageItems.reduce((s,i) => {
+    if(i.multiplier === 'perFoOra') return s + i.price*i.qty*(i.hours||1);
+    if(i.multiplier === 'perFoEjszaka') return s + i.price*i.qty*(i.nights||1);
+    return s + i.price*i.qty;
+  }, 0);
+  return { pkg, total: pkg };
+}
+
+// ---------------- render: beállítások ----------------
+function renderSettings(){
+  const grid = document.getElementById('settingsGrid');
+  const fields = [
+    ['vadaszkastely','Vadászkastély (Ft/fő/éj)'],
+    ['parasztaz','Parasztház (Ft/fő/éj)'],
+    ['egyagyasAr','Egyágyas ár (Ft/fő/éj)'],
+    ['ifa','IFA — 18 év felett (Ft/fő/éj)'],
+    ['reggeli','Reggeli (Ft/fő)'],
+    ['ebed','Ebéd (Ft/fő)'],
+    ['vacsora2','Vacsora — 2 fogás (Ft/fő)'],
+    ['vacsora3','Vacsora — 3 fogás (Ft/fő)']
+  ];
+  grid.innerHTML = fields.map(([key,lbl]) => `
+    <div><label>${lbl}</label>
+    <input type="number" value="${prices[key]}" onchange="prices.${key}=parseFloat(this.value)||0; render(); saveSettingsDebounced();"></div>
+  `).join('');
+
+  const brackets = document.getElementById('bracketRows');
+  brackets.innerHTML = Object.entries(gyerekBracket).map(([key,b]) => `
+    <div class="bracket-row">
+      <div class="lbl">${b.label}</div>
+      <div><label style="font-size:0.68rem;">Szállás (Ft/fő/éj)</label>
+        <input type="number" value="${b.szallasFt}" onchange="gyerekBracket['${key}'].szallasFt=parseFloat(this.value)||0; render(); saveSettingsDebounced();"></div>
+      <div><label style="font-size:0.68rem;">Étkezés (%)</label>
+        <input type="number" value="${b.etkezesSzazalek}" onchange="gyerekBracket['${key}'].etkezesSzazalek=parseFloat(this.value)||0; render(); saveSettingsDebounced();"></div>
+    </div>
+  `).join('');
+}
+
+function renderCatalogEditor(){
+  const el = document.getElementById('catalogRows');
+  const catLabels = { ital:'Ital', etel:'Étel', egyeb:'Egyéb' };
+  el.innerHTML = catalog.map(c => `
+    <div class="catalog-row">
+      <input placeholder="Tétel neve" value="${c.name}" onchange="updateCatalogItem('${c.id}','name',this.value)">
+      <select onchange="updateCatalogItem('${c.id}','category',this.value)">
+        ${Object.entries(catLabels).map(([k,l]) => `<option value="${k}" ${c.category===k?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <input type="number" placeholder="Ft" value="${c.price}" onchange="updateCatalogItem('${c.id}','price',this.value)">
+      <button class="rm" onclick="removeCatalogItem('${c.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderWeddingCatalogEditor(){
+  const el = document.getElementById('weddingCatalogRows');
+  const groupLabels = { vacsora:'All Inclusive vacsora', kiegeszito:'Kiegészítők', szallas:'Szállás' };
+  el.innerHTML = weddingCatalog.map(c => `
+    <div class="item-block">
+      <div class="item-row-name">
+        <input placeholder="Tétel neve" value="${c.name}" onchange="updateWeddingCatalogItem('${c.id}','name',this.value)">
+        <button class="rm" onclick="removeWeddingCatalogItem('${c.id}')">✕</button>
+      </div>
+      <div class="item-row-calc" style="margin-bottom:6px;">
+        <select style="min-width:110px;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.78rem;" onchange="updateWeddingCatalogItem('${c.id}','multiplier',this.value)">
+          <option value="flat" ${c.multiplier==='flat'?'selected':''}>Fix</option>
+          <option value="perFo" ${c.multiplier==='perFo'?'selected':''}>Fő-alapú</option>
+          <option value="perFoOra" ${c.multiplier==='perFoOra'?'selected':''}>Fő×Óra</option>
+          <option value="perFoEjszaka" ${c.multiplier==='perFoEjszaka'?'selected':''}>Fő×Éjszaka</option>
+        </select>
+        <select style="min-width:110px;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.78rem;" onchange="updateWeddingCatalogItem('${c.id}','csoport',this.value)">
+          ${Object.entries(groupLabels).map(([k,l]) => `<option value="${k}" ${c.csoport===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="item-row-calc">
+        <span class="op">Ár:</span>
+        <input type="number" placeholder="Ft" value="${c.price}" onchange="updateWeddingCatalogItem('${c.id}','price',this.value)">
+        <span class="op">Ft</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ---------------- render: általános fogyasztás blokk (közös HTML rész) ----------------
+function consumptionHtml(kind, id, consumption){
+  const catLabels = { ital:'Italok', etel:'Ételek', egyeb:'Egyéb tételek' };
+  const grouped = Object.entries(catLabels).map(([key,label]) => {
+    const items = catalog.filter(c => c.category === key && c.name.trim() !== '');
+    if(items.length === 0) return '';
+    return `<div class="grouplbl">${label}</div>
+      <div class="chips">${items.map(c => `<button class="chip" onclick="quickAddCatalogItem('${kind}','${id}','${c.id}')">+ ${c.name} — ${c.price.toLocaleString('hu-HU')} Ft</button>`).join('')}</div>`;
+  }).join('');
+  return `
+    <div class="consumption">
+      <h4>Fogyasztás (italok, egyéb tételek)</h4>
+      <details class="quickadd">
+        <summary>Gyors hozzáadás az árlistából</summary>
+        ${grouped}
+      </details>
+      ${consumption.map(i => `
+        <div class="item-block">
+          <div class="item-row-name">
+            <input placeholder="Tétel neve" value="${i.name}" onchange="updateItem('${kind}','${id}','${i.id}','name',this.value)">
+            <button class="rm" onclick="removeItem('${kind}','${id}','${i.id}')">✕</button>
+          </div>
+          <div class="item-row-calc">
+            <input type="number" min="0" value="${i.qty}" onchange="updateItem('${kind}','${id}','${i.id}','qty',this.value)">
+            <span class="op">×</span>
+            <input type="number" min="0" value="${i.price}" onchange="updateItem('${kind}','${id}','${i.id}','price',this.value)">
+            <span class="op">Ft =</span>
+            <span class="linetotal">${(i.qty*i.price).toLocaleString('hu-HU')} Ft</span>
+          </div>
+        </div>
+      `).join('')}
+      <button class="add-item" onclick="addItem('${kind}','${id}')">+ Egyéni tétel hozzáadása</button>
+    </div>
+  `;
+}
+
+// ---------------- render: szoba kártya ----------------
+function roomCardHtml(r){
+  const calc = calcRoom(r);
+  const group = groups.find(g => g.id === r.groupId);
+  return `
+  <div class="room-card ${r.groupId ? 'grouped' : ''}">
+    <div class="room-head">
+      <input type="checkbox" ${r.selected?'checked':''} onchange="toggleSelect('${r.id}')" title="Kijelölés összevonáshoz">
+      <input class="label" value="${r.label}" onchange="updateRoom('${r.id}','label',this.value)">
+      ${group ? `<span class="badge">${group.name}</span>` : ''}
+    </div>
+    <div class="room-body">
+      <div class="field-row">
+        <div class="field"><label>Szoba</label>
+          <select onchange="updateRoom('${r.id}','type',this.value)">
+            <option value="vadaszkastely" ${r.type==='vadaszkastely'?'selected':''}>Vadászkastély</option>
+            <option value="parasztaz" ${r.type==='parasztaz'?'selected':''}>Parasztház</option>
+          </select>
+        </div>
+        <div class="field"><label>Éjszakák</label>
+          <input type="number" min="0" value="${r.nights}" onchange="updateRoom('${r.id}','nights',this.value)"></div>
+      </div>
+      <div class="checkline">
+        <input type="checkbox" id="single_${r.id}" ${r.singleSurcharge?'checked':''} onchange="updateRoom('${r.id}','singleSurcharge',this.checked)">
+        <label for="single_${r.id}" style="font-size:0.85rem;">Egyágyas szoba (${prices.egyagyasAr.toLocaleString('hu-HU')} Ft/fő/éj)</label>
+      </div>
+      <div class="field-row four">
+        <div class="field"><label>Felnőtt (18+)</label>
+          <input type="number" min="0" value="${r.adults}" onchange="updateRoom('${r.id}','adults',this.value)"></div>
+        <div class="field"><label>Gyerek 0–4</label>
+          <input type="number" min="0" value="${r.child0_4}" onchange="updateRoom('${r.id}','child0_4',this.value)"></div>
+        <div class="field"><label>Gyerek 4–11</label>
+          <input type="number" min="0" value="${r.child4_11}" onchange="updateRoom('${r.id}','child4_11',this.value)"></div>
+        <div class="field"><label>Gyerek 12–17</label>
+          <input type="number" min="0" value="${r.child12_17}" onchange="updateRoom('${r.id}','child12_17',this.value)"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Ellátás</label>
+          <select onchange="updateRoom('${r.id}','mealPlan',this.value)">
+            <option value="none" ${r.mealPlan==='none'?'selected':''}>Nincs</option>
+            <option value="reggeli" ${r.mealPlan==='reggeli'?'selected':''}>Reggeli</option>
+            <option value="vacsora" ${r.mealPlan==='vacsora'?'selected':''}>Vacsora</option>
+            <option value="felpanzio" ${r.mealPlan==='felpanzio'?'selected':''}>Félpanzió</option>
+            <option value="teljes" ${r.mealPlan==='teljes'?'selected':''}>Teljes ellátás</option>
+          </select>
+        </div>
+        <div class="field"><label>Vacsora fogás</label>
+          <select onchange="updateRoom('${r.id}','dinnerCourses',this.value)" ${(r.mealPlan==='none'||r.mealPlan==='reggeli')?'disabled':''}>
+            <option value="2" ${r.dinnerCourses==='2'?'selected':''}>2 fogás</option>
+            <option value="3" ${r.dinnerCourses==='3'?'selected':''}>3 fogás</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="subtotal-line"><span>Szállás</span><span>${calc.szallas.toLocaleString('hu-HU')} Ft</span></div>
+      <div class="subtotal-line"><span>IFA</span><span>${calc.ifa.toLocaleString('hu-HU')} Ft</span></div>
+      <div class="subtotal-line"><span>Étkezés</span><span>${calc.etkezes.toLocaleString('hu-HU')} Ft</span></div>
+
+      ${consumptionHtml('room', r.id, r.consumption)}
+      <div class="subtotal-line total"><span>Fogyasztás összesen</span><span>${calc.fogyasztas.toLocaleString('hu-HU')} Ft</span></div>
+    </div>
+    <div class="room-foot">
+      <button class="del" onclick="removeRoom('${r.id}')">Lezárás</button>
+      <span class="rtotal">${calc.total.toLocaleString('hu-HU')} Ft</span>
+    </div>
+  </div>
+  `;
+}
+
+// ---------------- render: asztal kártya ----------------
+function tableCardHtml(t){
+  const calc = calcTable(t);
+  return `
+  <div class="room-card">
+    <div class="room-head">
+      <input class="label" value="${t.label}" onchange="updateTable('${t.id}','label',this.value)">
+    </div>
+    <div class="room-body">
+      ${consumptionHtml('table', t.id, t.consumption)}
+    </div>
+    <div class="room-foot">
+      <button class="del" onclick="removeTable('${t.id}')">Lezárás</button>
+      <span class="rtotal">${calc.total.toLocaleString('hu-HU')} Ft</span>
+    </div>
+  </div>
+  `;
+}
+
+// ---------------- render: esküvő kártya ----------------
+function weddingChipsHtml(w){
+  const items = weddingCatalog.filter(c => c.name.trim() !== '');
+  if(items.length === 0) return '';
+  return `<div class="chips">${items.map(c => {
+    const suffix = c.multiplier === 'perFo' ? '/fő' : (c.multiplier === 'perFoOra' ? '/fő/óra' : '');
+    return `<button class="chip" onclick="quickAddWeddingPackage('${w.id}','${c.id}')">+ ${c.name} — ${c.price.toLocaleString('hu-HU')} Ft${suffix}</button>`;
+  }).join('')}</div>`;
+}
+
+function weddingCardHtml(w){
+  const calc = calcWedding(w);
+  return `
+  <div class="room-card">
+    <div class="room-head">
+      <input class="label" value="${w.label}" onchange="updateWedding('${w.id}','label',this.value)">
+    </div>
+    <div class="room-body">
+      <h4 style="margin:4px 0 8px;font-size:0.8rem;color:var(--forest-2);">Esküvői tételek</h4>
+      <details class="quickadd">
+        <summary>Gyors hozzáadás a tételekből</summary>
+        ${weddingChipsHtml(w)}
+      </details>
+      ${w.packageItems.map(i => {
+        const lineTotal = i.multiplier==='perFoOra' ? i.price*i.qty*(i.hours||1)
+                         : i.multiplier==='perFoEjszaka' ? i.price*i.qty*(i.nights||1)
+                         : i.price*i.qty;
+        return `
+        <div class="item-block">
+          <div class="item-row-name">
+            <input placeholder="Tétel neve" value="${i.name}" onchange="updatePackageItem('${w.id}','${i.id}','name',this.value)">
+            <button class="rm" onclick="removePackageItem('${w.id}','${i.id}')">✕</button>
+          </div>
+          <div class="item-row-calc" style="margin-bottom:6px;">
+            <select style="min-width:110px;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.78rem;" onchange="updatePackageItem('${w.id}','${i.id}','multiplier',this.value)">
+              <option value="flat" ${i.multiplier==='flat'?'selected':''}>Fix (db)</option>
+              <option value="perFo" ${i.multiplier==='perFo'?'selected':''}>Fő szerint</option>
+              <option value="perFoOra" ${i.multiplier==='perFoOra'?'selected':''}>Fő × Óra</option>
+              <option value="perFoEjszaka" ${i.multiplier==='perFoEjszaka'?'selected':''}>Fő × Éjszaka</option>
+            </select>
+          </div>
+          <div class="item-row-calc">
+            <input type="number" min="0" value="${i.qty}" onchange="updatePackageItem('${w.id}','${i.id}','qty',this.value)">
+            <span class="op">${i.multiplier==='flat'?'db ×':'fő ×'}</span>
+            <input type="number" min="0" value="${i.price}" onchange="updatePackageItem('${w.id}','${i.id}','price',this.value)">
+            <span class="op">Ft</span>
+            ${i.multiplier==='perFoOra' ? `
+              <input type="number" min="0" step="0.5" value="${i.hours}" onchange="updatePackageItem('${w.id}','${i.id}','hours',this.value)">
+              <span class="op">óra</span>` : ''}
+            ${i.multiplier==='perFoEjszaka' ? `
+              <input type="number" min="0" step="1" value="${i.nights||1}" onchange="updatePackageItem('${w.id}','${i.id}','nights',this.value)">
+              <span class="op">éjszaka</span>` : ''}
+            <span class="linetotal">= ${lineTotal.toLocaleString('hu-HU')} Ft</span>
+          </div>
+        </div>
+      `; }).join('')}
+      <button class="add-item" onclick="addCustomWeddingPackageItem('${w.id}')">+ Egyéni tétel</button>
+      <div class="subtotal-line total"><span>Esküvő összesen</span><span>${calc.pkg.toLocaleString('hu-HU')} Ft</span></div>
+    </div>
+    <div class="room-foot">
+      <button class="del" onclick="removeWedding('${w.id}')">Lezárás</button>
+      <span class="rtotal">${calc.total.toLocaleString('hu-HU')} Ft</span>
+    </div>
+  </div>
+  `;
+}
+
+// ---------------- fő render ----------------
+function render(){
+  renderSettings();
+  renderCatalogEditor();
+  renderWeddingCatalogEditor();
+
+  const groupsContainer = document.getElementById('groupsContainer');
+  groupsContainer.innerHTML = groups.map(g => {
+    const members = rooms.filter(r => r.groupId === g.id);
+    const sum = members.reduce((s,r) => s + calcRoom(r).total, 0);
+    return `
+      <div class="group-block">
+        <div class="gname"><span>${g.name} (${members.length} tétel)</span>
+          <button onclick="ungroup('${g.id}')">szétbontás</button></div>
+        <div class="subtotal-line total"><span>Csoport összesen</span><span>${sum.toLocaleString('hu-HU')} Ft</span></div>
+      </div>`;
+  }).join('');
+
+  const roomsContainer = document.getElementById('roomsContainer');
+  roomsContainer.innerHTML = rooms.length === 0
+    ? `<div class="empty-state">Még nincs felvéve szoba vagy vendégcsoport.<br>Kattints a fenti gombra a kezdéshez.</div>`
+    : rooms.map(roomCardHtml).join('');
+
+  const weddingsContainer = document.getElementById('weddingsContainer');
+  weddingsContainer.innerHTML = weddings.length === 0
+    ? `<div class="empty-state">Még nincs felvéve esküvői társaság.<br>Kattints a fenti gombra a kezdéshez.</div>`
+    : weddings.map(weddingCardHtml).join('');
+
+  const tablesContainer = document.getElementById('tablesContainer');
+  tablesContainer.innerHTML = tables.length === 0
+    ? `<div class="empty-state">Még nincs felvéve asztal.<br>Kattints a fenti gombra a kezdéshez.</div>`
+    : tables.map(tableCardHtml).join('');
+
+  if(currentTab === 'rooms'){
+    const grand = rooms.reduce((s,r) => s + calcRoom(r).total, 0);
+    document.getElementById('grandTotal').textContent = grand.toLocaleString('hu-HU') + ' Ft';
+    document.getElementById('countLabel').textContent = rooms.length + ' szoba / vendégcsoport';
+    document.getElementById('summaryLabel').textContent = 'Mindösszesen (szoba)';
+  } else if(currentTab === 'tables'){
+    const grand = tables.reduce((s,t) => s + calcTable(t).total, 0);
+    document.getElementById('grandTotal').textContent = grand.toLocaleString('hu-HU') + ' Ft';
+    document.getElementById('countLabel').textContent = tables.length + ' asztal';
+    document.getElementById('summaryLabel').textContent = 'Mindösszesen (étterem)';
+  } else {
+    const grand = weddings.reduce((s,w) => s + calcWedding(w).total, 0);
+    document.getElementById('grandTotal').textContent = grand.toLocaleString('hu-HU') + ' Ft';
+    document.getElementById('countLabel').textContent = weddings.length + ' esküvő';
+    document.getElementById('summaryLabel').textContent = 'Mindösszesen (esküvő)';
+  }
+}
+
+initFromSupabase();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.log('SW regisztráció sikertelen:', e));
+  });
+}
+</script>
+</body>
+</html>

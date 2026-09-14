@@ -85,6 +85,8 @@
   .room-foot .del{background:none;border:none;color:var(--danger);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;}
   .room-foot .rtotal{font-weight:700;color:var(--forest);font-size:0.98rem;}
   .group-block{background:#EFE6CE;border:1px solid var(--gold);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;}
+  .group-add-row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;}
+  .group-add-row .add-item{flex:1;min-width:140px;margin-top:0;background:#fff;}
   .group-block .gname{font-family:'Lora',serif;font-weight:600;color:var(--forest);margin-bottom:6px;display:flex;justify-content:space-between;}
   .group-block .gname button{background:none;border:none;color:var(--danger);font-size:0.75rem;cursor:pointer;}
   .empty-state{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:0.9rem;}
@@ -429,7 +431,7 @@ function addRoom(){
     id, label: 'Vendég/szoba ' + roomCounter, type:'vadaszkastely', nights:1,
     adults:1, child0_4:0, child4_11:0, child12_17:0,
     singleSurcharge:false, mealPlan:'none', dinnerCourses:'2',
-    selected:false, groupId:null, consumption:[]
+    selected:false, groupId:null, noRoom:false, consumption:[]
   });
   render();
   persistUnitDebounced('room', id);
@@ -448,12 +450,14 @@ function updateRoom(id, field, value){
 }
 function toggleSelect(id){ const r = rooms.find(r=>r.id===id); r.selected = !r.selected; render(); }
 function clearSelection(){ rooms.forEach(r=>r.selected=false); render(); }
+const GROUP_COLORS = ['#B9873E','#4A7C6F','#8E5572','#3E6B89','#A65C2E','#5B7B3F','#6E7F3E','#9C4B4B'];
+function nextGroupColor(){ return GROUP_COLORS[groups.length % GROUP_COLORS.length]; }
 function mergeSelected(){
   const sel = rooms.filter(r=>r.selected);
   if(sel.length < 2){ alert('Jelölj ki legalább 2 szobát / vendégcsoportot az összevonáshoz.'); return; }
   const gid = uid('g');
   const name = prompt('Add meg az összevont számla nevét:', 'Összevont számla ' + (groups.length+1)) || ('Összevont számla ' + (groups.length+1));
-  groups.push({ id:gid, name });
+  groups.push({ id:gid, name, color: nextGroupColor() });
   sel.forEach(r => { r.groupId = gid; r.selected = false; persistUnitDebounced('room', r.id); });
   render();
   saveSettingsDebounced();
@@ -464,6 +468,25 @@ function ungroup(gid){
   render();
   saveSettingsDebounced();
 }
+function assignRoomGroup(roomId, groupId){
+  const r = rooms.find(r=>r.id===roomId); if(!r) return;
+  r.groupId = groupId || null;
+  render();
+  persistUnitDebounced('room', roomId);
+}
+function addRoomToGroup(gid, noRoom){
+  roomCounter++;
+  const id = newId();
+  rooms.push({
+    id, label: noRoom ? ('Tag ' + roomCounter) : ('Vendég/szoba ' + roomCounter), type:'vadaszkastely', nights:1,
+    adults:1, child0_4:0, child4_11:0, child12_17:0,
+    singleSurcharge:false, mealPlan:'none', dinnerCourses:'2',
+    selected:false, groupId:gid, noRoom: !!noRoom, consumption:[]
+  });
+  render();
+  persistUnitDebounced('room', id);
+}
+
 
 // ---------------- esküvők ----------------
 function addWedding(){
@@ -594,8 +617,8 @@ function calcRoom(r){
     const count = key==='0-4' ? r.child0_4 : (key==='4-11' ? r.child4_11 : r.child12_17);
     return sum + count * gyerekBracket[key].szallasFt * r.nights;
   },0);
-  const szallas = szallasFelnott + szallasGyerek;
-  const ifa = r.adults * prices.ifa * r.nights;
+  const szallas = r.noRoom ? 0 : (szallasFelnott + szallasGyerek);
+  const ifa = r.noRoom ? 0 : (r.adults * prices.ifa * r.nights);
   const mealAdult = mealPerAdultPerNight(r.mealPlan, r.dinnerCourses);
   const etkezesGyerek = ['0-4','4-11','12-17'].reduce((sum,key) => {
     const count = key==='0-4' ? r.child0_4 : (key==='4-11' ? r.child4_11 : r.child12_17);
@@ -728,14 +751,31 @@ function consumptionHtml(kind, id, consumption){
 function roomCardHtml(r){
   const calc = calcRoom(r);
   const group = groups.find(g => g.id === r.groupId);
+  const groupOptions = groups.map(g => `<option value="${g.id}" ${r.groupId===g.id?'selected':''}>${g.name}</option>`).join('');
   return `
-  <div class="room-card ${r.groupId ? 'grouped' : ''}">
+  <div class="room-card ${r.groupId ? 'grouped' : ''}" ${group ? `style="border-left-color:${group.color}"` : ''}>
     <div class="room-head">
       <input type="checkbox" ${r.selected?'checked':''} onchange="toggleSelect('${r.id}')" title="Kijelölés összevonáshoz">
       <input class="label" value="${r.label}" onchange="updateRoom('${r.id}','label',this.value)">
-      ${group ? `<span class="badge">${group.name}</span>` : ''}
+      ${r.noRoom ? '<span class="badge" style="background:#6B6455;">Szoba nélkül</span>' : ''}
+      ${group ? `<span class="badge" style="background:${group.color}">${group.name}</span>` : ''}
     </div>
     <div class="room-body">
+      <div class="field-row">
+        <div class="field"><label>Csoport</label>
+          <select onchange="assignRoomGroup('${r.id}', this.value)">
+            <option value="">— nincs csoport —</option>
+            ${groupOptions}
+          </select>
+        </div>
+        <div class="field"><label>&nbsp;</label>
+          <div class="checkline" style="margin:6px 0 0;">
+            <input type="checkbox" id="noroom_${r.id}" ${r.noRoom?'checked':''} onchange="updateRoom('${r.id}','noRoom',this.checked)">
+            <label for="noroom_${r.id}" style="font-size:0.85rem;">Nincs szállása (csak étkezés/ital)</label>
+          </div>
+        </div>
+      </div>
+      ${r.noRoom ? '' : `
       <div class="field-row">
         <div class="field"><label>Szoba</label>
           <select onchange="updateRoom('${r.id}','type',this.value)">
@@ -749,7 +789,7 @@ function roomCardHtml(r){
       <div class="checkline">
         <input type="checkbox" id="single_${r.id}" ${r.singleSurcharge?'checked':''} onchange="updateRoom('${r.id}','singleSurcharge',this.checked)">
         <label for="single_${r.id}" style="font-size:0.85rem;">Egyágyas szoba (${prices.egyagyasAr.toLocaleString('hu-HU')} Ft/fő/éj)</label>
-      </div>
+      </div>`}
       <div class="field-row four">
         <div class="field"><label>Felnőtt (18+)</label>
           <input type="number" min="0" value="${r.adults}" onchange="updateRoom('${r.id}','adults',this.value)"></div>
@@ -778,8 +818,9 @@ function roomCardHtml(r){
         </div>
       </div>
 
+      ${r.noRoom ? '' : `
       <div class="subtotal-line"><span>Szállás</span><span>${calc.szallas.toLocaleString('hu-HU')} Ft</span></div>
-      <div class="subtotal-line"><span>IFA</span><span>${calc.ifa.toLocaleString('hu-HU')} Ft</span></div>
+      <div class="subtotal-line"><span>IFA</span><span>${calc.ifa.toLocaleString('hu-HU')} Ft</span></div>`}
       <div class="subtotal-line"><span>Étkezés</span><span>${calc.etkezes.toLocaleString('hu-HU')} Ft</span></div>
 
       ${consumptionHtml('room', r.id, r.consumption)}
@@ -885,22 +926,29 @@ function render(){
   renderCatalogEditor();
   renderWeddingCatalogEditor();
 
-  const groupsContainer = document.getElementById('groupsContainer');
-  groupsContainer.innerHTML = groups.map(g => {
+  document.getElementById('groupsContainer').innerHTML = '';
+
+  const groupedHtml = groups.map(g => {
     const members = rooms.filter(r => r.groupId === g.id);
     const sum = members.reduce((s,r) => s + calcRoom(r).total, 0);
     return `
-      <div class="group-block">
-        <div class="gname"><span>${g.name} (${members.length} tétel)</span>
+      <div class="group-block" style="border-color:${g.color};background:${g.color}22;">
+        <div class="gname" style="color:${g.color};"><span>${g.name} (${members.length} tétel)</span>
           <button onclick="ungroup('${g.id}')">szétbontás</button></div>
+        <div class="group-add-row">
+          <button class="add-item" style="border-color:${g.color};color:${g.color};" onclick="addRoomToGroup('${g.id}', false)">+ Szoba a csoporthoz</button>
+          <button class="add-item" style="border-color:${g.color};color:${g.color};" onclick="addRoomToGroup('${g.id}', true)">+ Tag szoba nélkül</button>
+        </div>
         <div class="subtotal-line total"><span>Csoport összesen</span><span>${sum.toLocaleString('hu-HU')} Ft</span></div>
-      </div>`;
+      </div>` + members.map(roomCardHtml).join('');
   }).join('');
+
+  const ungroupedHtml = rooms.filter(r => !r.groupId).map(roomCardHtml).join('');
 
   const roomsContainer = document.getElementById('roomsContainer');
   roomsContainer.innerHTML = rooms.length === 0
     ? `<div class="empty-state">Még nincs felvéve szoba vagy vendégcsoport.<br>Kattints a fenti gombra a kezdéshez.</div>`
-    : rooms.map(roomCardHtml).join('');
+    : groupedHtml + ungroupedHtml;
 
   const weddingsContainer = document.getElementById('weddingsContainer');
   weddingsContainer.innerHTML = weddings.length === 0

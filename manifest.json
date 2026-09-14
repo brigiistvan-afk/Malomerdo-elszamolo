@@ -1,0 +1,13 @@
+{
+  "name": "Malomerdő Elszámoló",
+  "short_name": "Elszámoló",
+  "start_url": "./malomerdo-elszamolo.html",
+  "display": "standalone",
+  "background_color": "#F3EFE4",
+  "theme_color": "#26352B",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

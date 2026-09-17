@@ -142,6 +142,9 @@
 
   <div id="groupsContainer"></div>
   <div id="roomsContainer"></div>
+
+  <button class="add-item" onclick="toggleClosedView('rooms')" id="closedToggle_rooms">Lezárt tételek megtekintése</button>
+  <div id="closedRoomsContainer" style="display:none;margin-top:10px;"></div>
 </div>
 
 <!-- ===================== ÉTTEREM FÜL ===================== -->
@@ -154,6 +157,9 @@
   <button class="add-btn" onclick="addTable()">+ Új asztal / vendég hozzáadása</button>
 
   <div id="tablesContainer"></div>
+
+  <button class="add-item" onclick="toggleClosedView('tables')" id="closedToggle_tables">Lezárt tételek megtekintése</button>
+  <div id="closedTablesContainer" style="display:none;margin-top:10px;"></div>
 </div>
 
 <!-- ===================== ESKÜVŐ FÜL ===================== -->
@@ -170,6 +176,9 @@
   <button class="add-btn" onclick="addWedding()">+ Új esküvői társaság hozzáadása</button>
 
   <div id="weddingsContainer"></div>
+
+  <button class="add-item" onclick="toggleClosedView('wedding')" id="closedToggle_wedding">Lezárt tételek megtekintése</button>
+  <div id="closedWeddingContainer" style="display:none;margin-top:10px;"></div>
 </div>
 
 </main>
@@ -357,6 +366,65 @@ function persistUnitDebounced(kind, id){
     if(owner) sbUpsertUnit(tipus, owner.id, owner);
   }, 500);
 }
+// ---------------- lezárt tételek megtekintése ----------------
+let closedVisible = { rooms:false, tables:false, wedding:false };
+function closedTipus(tab){ return tab==='rooms' ? 'szoba' : (tab==='tables' ? 'asztal' : 'eskuvo'); }
+function closedContainerId(tab){ return tab==='rooms' ? 'closedRoomsContainer' : (tab==='tables' ? 'closedTablesContainer' : 'closedWeddingContainer'); }
+function toggleClosedView(tab){
+  closedVisible[tab] = !closedVisible[tab];
+  const el = document.getElementById(closedContainerId(tab));
+  const btn = document.getElementById('closedToggle_' + tab);
+  el.style.display = closedVisible[tab] ? 'block' : 'none';
+  if(btn) btn.textContent = closedVisible[tab] ? 'Lezárt tételek elrejtése' : 'Lezárt tételek megtekintése';
+  if(closedVisible[tab]) loadClosedView(tab);
+}
+async function loadClosedView(tab){
+  const el = document.getElementById(closedContainerId(tab));
+  el.innerHTML = '<div class="empty-state">Betöltés…</div>';
+  try{
+    const res = await fetch(SUPABASE_URL + '/rest/v1/elszamolo_egysegek?statusz=eq.lezart&tipus=eq.' + closedTipus(tab) + '&order=lezarva_at.desc&limit=200&select=id,adat,lezarva_at', { headers: sbHeaders() });
+    const rows = await res.json();
+    if(!Array.isArray(rows) || rows.length === 0){
+      el.innerHTML = '<div class="empty-state">Nincs lezárt tétel az elmúlt 30 napból.</div>';
+      return;
+    }
+    el.innerHTML = rows.map(row => closedItemHtml(tab, row)).join('');
+  }catch(e){
+    el.innerHTML = '<div class="empty-state">Hiba történt a betöltésnél.</div>';
+  }
+}
+function closedItemHtml(tab, row){
+  const obj = Object.assign({}, row.adat, { id: row.id });
+  let total = 0;
+  if(tab === 'rooms') total = calcRoom(obj).total;
+  else if(tab === 'tables') total = calcTable(obj).total;
+  else total = calcWedding(obj).total;
+  const dateStr = row.lezarva_at ? new Date(row.lezarva_at).toLocaleString('hu-HU') : '—';
+  const checkinLine = (tab === 'rooms' && obj.checkinDate)
+    ? `<div class="subtotal-line"><span>Érkezés</span><span>${new Date(obj.checkinDate+'T00:00:00').toLocaleDateString('hu-HU')} (${obj.nights||0} éj)</span></div>`
+    : '';
+  return `
+    <div class="room-card" style="opacity:0.8;">
+      <div class="room-head"><span style="font-family:'Lora',serif;font-weight:600;color:var(--forest);">${obj.label || '(névtelen)'}</span></div>
+      <div class="room-body">
+        ${checkinLine}
+        <div class="subtotal-line"><span>Lezárva</span><span>${dateStr}</span></div>
+        <div class="subtotal-line total"><span>Végösszeg</span><span>${total.toLocaleString('hu-HU')} Ft</span></div>
+      </div>
+      <div class="room-foot">
+        <button class="del" onclick="permanentlyDeleteClosed('${row.id}','${tab}')">Végleges törlés</button>
+        <span style="font-size:0.72rem;color:var(--ink-soft);">30 nap után úgyis automatikusan törlődik</span>
+      </div>
+    </div>`;
+}
+async function permanentlyDeleteClosed(id, tab){
+  if(!confirm('Ez a tétel VÉGLEGESEN törlődik, nem állítható vissza (nem várja meg a 30 napot). Biztosan folytatod?')) return;
+  try{
+    await fetch(SUPABASE_URL + '/rest/v1/elszamolo_egysegek?id=eq.' + id, { method:'DELETE', headers: sbHeaders({ Prefer:'return=minimal' }) });
+  }catch(e){ console.error('Végleges törlési hiba', e); }
+  loadClosedView(tab);
+}
+
 async function initFromSupabase(){
   try{
     const [unitsRes, settingsRes] = await Promise.all([
@@ -424,11 +492,12 @@ function setTab(tab){
 }
 
 // ---------------- szobák ----------------
+function todayISO(){ return new Date().toISOString().slice(0,10); }
 function addRoom(){
   roomCounter++;
   const id = newId();
   rooms.push({
-    id, label: 'Vendég/szoba ' + roomCounter, type:'vadaszkastely', nights:1,
+    id, label: 'Vendég/szoba ' + roomCounter, type:'vadaszkastely', nights:1, checkinDate: todayISO(),
     adults:1, child0_4:0, child4_11:0, child12_17:0,
     singleSurcharge:false, mealPlan:'none', dinnerCourses:'2',
     selected:false, groupId:null, noRoom:false, consumption:[]
@@ -478,7 +547,7 @@ function addRoomToGroup(gid, noRoom){
   roomCounter++;
   const id = newId();
   rooms.push({
-    id, label: noRoom ? ('Tag ' + roomCounter) : ('Vendég/szoba ' + roomCounter), type:'vadaszkastely', nights:1,
+    id, label: noRoom ? ('Tag ' + roomCounter) : ('Vendég/szoba ' + roomCounter), type:'vadaszkastely', nights:1, checkinDate: todayISO(),
     adults:1, child0_4:0, child4_11:0, child12_17:0,
     singleSurcharge:false, mealPlan:'none', dinnerCourses:'2',
     selected:false, groupId:gid, noRoom: !!noRoom, consumption:[]
@@ -601,6 +670,13 @@ function updateWeddingCatalogItem(id, field, value){
 function removeWeddingCatalogItem(id){ weddingCatalog = weddingCatalog.filter(c=>c.id!==id); render(); saveSettingsDebounced(); }
 
 // ---------------- számítások ----------------
+function departureDateStr(r){
+  if(!r.checkinDate) return '—';
+  const d = new Date(r.checkinDate + 'T00:00:00');
+  if(isNaN(d)) return '—';
+  d.setDate(d.getDate() + (parseInt(r.nights) || 0));
+  return d.toLocaleDateString('hu-HU');
+}
 function roomBasePrice(type){ return type === 'parasztaz' ? prices.parasztaz : prices.vadaszkastely; }
 function mealPerAdultPerNight(mealPlan, dinnerCourses){
   const vacsora = dinnerCourses === '3' ? prices.vacsora3 : prices.vacsora2;
@@ -785,6 +861,12 @@ function roomCardHtml(r){
         </div>
         <div class="field"><label>Éjszakák</label>
           <input type="number" min="0" value="${r.nights}" onchange="updateRoom('${r.id}','nights',this.value)"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Érkezés dátuma</label>
+          <input type="date" value="${r.checkinDate||''}" onchange="updateRoom('${r.id}','checkinDate',this.value)"></div>
+        <div class="field"><label>Távozás (számított)</label>
+          <input type="text" value="${departureDateStr(r)}" disabled style="background:#F3EEDF;color:var(--ink-soft);"></div>
       </div>
       <div class="checkline">
         <input type="checkbox" id="single_${r.id}" ${r.singleSurcharge?'checked':''} onchange="updateRoom('${r.id}','singleSurcharge',this.checked)">

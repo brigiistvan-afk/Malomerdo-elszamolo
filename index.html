@@ -48,7 +48,9 @@
   .group-toolbar button{flex:1;min-width:140px;padding:9px;border:1px solid var(--gold);background:transparent;color:var(--forest);border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
   .room-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;}
   .room-card.grouped{border-left:5px solid var(--gold);}
-  .room-head{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#F3EEDF;border-bottom:1px solid var(--line);}
+  .room-head{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#F3EEDF;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .collapsed-total{font-weight:700;color:var(--forest);font-size:0.9rem;white-space:nowrap;margin-left:auto;}
+  .expand-toggle{background:none;border:1px solid var(--gold);color:var(--forest);border-radius:6px;width:28px;height:28px;font-size:0.85rem;cursor:pointer;flex-shrink:0;}
   .room-head input.label{flex:1;border:none;background:transparent;font-family:'Lora',serif;font-weight:600;font-size:1rem;color:var(--forest);padding:2px 0;}
   .room-head .badge{font-size:0.68rem;background:var(--gold);color:#fff;padding:2px 7px;border-radius:20px;white-space:nowrap;}
   .room-body{padding:12px 14px;}
@@ -67,6 +69,7 @@
   .consumption h4{margin:0 0 8px;font-size:0.8rem;color:var(--forest-2);font-weight:700;}
   details.quickadd summary{cursor:pointer;font-size:0.8rem;color:var(--forest-2);font-weight:600;margin-bottom:8px;}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+  .chip-search{width:100%;padding:8px;margin-bottom:8px;border:1px solid var(--gold);border-radius:7px;font-size:0.85rem;font-family:'Inter',sans-serif;box-sizing:border-box;}
   .chip{background:#fff;border:1px solid var(--gold);color:var(--forest);border-radius:20px;padding:6px 11px;font-size:0.76rem;cursor:pointer;font-family:'Inter',sans-serif;}
   .chip:active{background:var(--gold-soft);}
   .grouplbl{font-size:0.72rem;color:var(--ink-soft);margin:8px 0 4px;}
@@ -83,6 +86,7 @@
   .item-row-calc .linetotal{margin-left:auto;font-weight:700;color:var(--forest);white-space:nowrap;}
   .room-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#F3EEDF;border-top:1px solid var(--line);}
   .room-foot .del{background:none;border:none;color:var(--danger);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;}
+  .room-foot .dup{background:none;border:none;color:var(--forest-2);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;margin-left:10px;}
   .room-foot .rtotal{font-weight:700;color:var(--forest);font-size:0.98rem;}
   .group-block{background:#EFE6CE;border:1px solid var(--gold);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;}
   .group-add-row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;}
@@ -308,6 +312,19 @@ let tableCounter = 0;
 let weddingCounter = 0;
 let uidCounter = 0;
 function uid(p){ return p + (++uidCounter); }
+let expandedState = {};
+function isExpanded(kind, id){ return !!expandedState[kind + ':' + id]; }
+function setExpanded(kind, id, val){ expandedState[kind + ':' + id] = val; }
+function toggleExpanded(kind, id){ setExpanded(kind, id, !isExpanded(kind, id)); render(); }
+function filterChips(containerId, query){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const q = query.trim().toLowerCase();
+  container.querySelectorAll('.chip').forEach(btn => {
+    const txt = btn.getAttribute('data-search') || btn.textContent.toLowerCase();
+    btn.style.display = (q === '' || txt.includes(q)) ? '' : 'none';
+  });
+}
 function newId(){
   if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -413,6 +430,7 @@ function closedItemHtml(tab, row){
       </div>
       <div class="room-foot">
         <button class="del" onclick="permanentlyDeleteClosed('${row.id}','${tab}')">Végleges törlés</button>
+        <button class="dup" onclick="restoreClosedItem('${row.id}','${tab}')">Visszaállítás</button>
         <span style="font-size:0.72rem;color:var(--ink-soft);">30 nap után úgyis automatikusan törlődik</span>
       </div>
     </div>`;
@@ -422,6 +440,25 @@ async function permanentlyDeleteClosed(id, tab){
   try{
     await fetch(SUPABASE_URL + '/rest/v1/elszamolo_egysegek?id=eq.' + id, { method:'DELETE', headers: sbHeaders({ Prefer:'return=minimal' }) });
   }catch(e){ console.error('Végleges törlési hiba', e); }
+  loadClosedView(tab);
+}
+async function restoreClosedItem(id, tab){
+  try{
+    const res = await fetch(SUPABASE_URL + '/rest/v1/elszamolo_egysegek?id=eq.' + id, {
+      method:'PATCH',
+      headers: sbHeaders({ Prefer:'return=representation' }),
+      body: JSON.stringify({ statusz:'aktiv', lezarva_at:null })
+    });
+    const rows = await res.json();
+    const row = rows && rows[0];
+    if(row){
+      const obj = Object.assign({}, row.adat, { id: row.id });
+      if(tab === 'rooms') rooms.push(obj);
+      else if(tab === 'tables') tables.push(obj);
+      else weddings.push(obj);
+      render();
+    }
+  }catch(e){ console.error('Visszaállítási hiba', e); }
   loadClosedView(tab);
 }
 
@@ -460,6 +497,7 @@ function addTable(){
   tableCounter++;
   const id = newId();
   tables.push({ id, label: 'Asztal ' + tableCounter, consumption:[] });
+  setExpanded('table', id, true);
   render();
   persistUnitDebounced('table', id);
 }
@@ -477,6 +515,19 @@ function updateTable(id, field, value){
 function calcTable(t){
   const total = t.consumption.reduce((s,i)=> s + (i.qty*i.price), 0);
   return { total };
+}
+function duplicateTable(id){
+  const t = tables.find(t=>t.id===id); if(!t) return;
+  tableCounter++;
+  const newId_ = newId();
+  const copy = JSON.parse(JSON.stringify(t));
+  copy.id = newId_;
+  copy.label = t.label + ' (másolat)';
+  copy.consumption = (t.consumption||[]).map(it => Object.assign({}, it, { id: uid('i') }));
+  tables.push(copy);
+  setExpanded('table', newId_, true);
+  render();
+  persistUnitDebounced('table', newId_);
 }
 
 // ---------------- tab váltás ----------------
@@ -502,6 +553,7 @@ function addRoom(){
     singleSurcharge:false, mealPlan:'none', dinnerCourses:'2',
     selected:false, groupId:null, noRoom:false, consumption:[]
   });
+  setExpanded('room', id, true);
   render();
   persistUnitDebounced('room', id);
 }
@@ -510,6 +562,20 @@ function removeRoom(id){
   if(!confirm('Biztosan lezárod ezt a szobát/vendégcsoportot?\n\n"' + (r ? r.label : '') + '" — ez eltűnik a listából.')) return;
   rooms = rooms.filter(r => r.id !== id); render();
   sbCloseUnit(id);
+}
+function duplicateRoom(id){
+  const r = rooms.find(r=>r.id===id); if(!r) return;
+  roomCounter++;
+  const newId_ = newId();
+  const copy = JSON.parse(JSON.stringify(r));
+  copy.id = newId_;
+  copy.label = r.label + ' (másolat)';
+  copy.selected = false;
+  copy.consumption = (r.consumption||[]).map(it => Object.assign({}, it, { id: uid('i') }));
+  rooms.push(copy);
+  setExpanded('room', newId_, true);
+  render();
+  persistUnitDebounced('room', newId_);
 }
 function updateRoom(id, field, value){
   const r = rooms.find(r => r.id === id); if(!r) return;
@@ -552,6 +618,7 @@ function addRoomToGroup(gid, noRoom){
     singleSurcharge:false, mealPlan:'none', dinnerCourses:'2',
     selected:false, groupId:gid, noRoom: !!noRoom, consumption:[]
   });
+  setExpanded('room', id, true);
   render();
   persistUnitDebounced('room', id);
 }
@@ -562,6 +629,7 @@ function addWedding(){
   weddingCounter++;
   const id = newId();
   weddings.push({ id, label: 'Esküvő ' + weddingCounter, packageItems:[] });
+  setExpanded('wedding', id, true);
   render();
   persistUnitDebounced('wedding', id);
 }
@@ -790,18 +858,20 @@ function renderWeddingCatalogEditor(){
 // ---------------- render: általános fogyasztás blokk (közös HTML rész) ----------------
 function consumptionHtml(kind, id, consumption){
   const catLabels = { ital:'Italok', etel:'Ételek', egyeb:'Egyéb tételek' };
+  const chipsContainerId = 'chips_' + kind + '_' + id;
   const grouped = Object.entries(catLabels).map(([key,label]) => {
     const items = catalog.filter(c => c.category === key && c.name.trim() !== '');
     if(items.length === 0) return '';
     return `<div class="grouplbl">${label}</div>
-      <div class="chips">${items.map(c => `<button class="chip" onclick="quickAddCatalogItem('${kind}','${id}','${c.id}')">+ ${c.name} — ${c.price.toLocaleString('hu-HU')} Ft</button>`).join('')}</div>`;
+      <div class="chips">${items.map(c => `<button class="chip" data-search="${c.name.toLowerCase()}" onclick="quickAddCatalogItem('${kind}','${id}','${c.id}')">+ ${c.name} — ${c.price.toLocaleString('hu-HU')} Ft</button>`).join('')}</div>`;
   }).join('');
   return `
     <div class="consumption">
       <h4>Fogyasztás (italok, egyéb tételek)</h4>
       <details class="quickadd">
         <summary>Gyors hozzáadás az árlistából</summary>
-        ${grouped}
+        <input type="text" class="chip-search" placeholder="Keresés az árlistában…" oninput="filterChips('${chipsContainerId}', this.value)">
+        <div id="${chipsContainerId}">${grouped}</div>
       </details>
       ${consumption.map(i => `
         <div class="item-block">
@@ -828,6 +898,7 @@ function roomCardHtml(r){
   const calc = calcRoom(r);
   const group = groups.find(g => g.id === r.groupId);
   const groupOptions = groups.map(g => `<option value="${g.id}" ${r.groupId===g.id?'selected':''}>${g.name}</option>`).join('');
+  const expanded = isExpanded('room', r.id);
   return `
   <div class="room-card ${r.groupId ? 'grouped' : ''}" ${group ? `style="border-left-color:${group.color}"` : ''}>
     <div class="room-head">
@@ -835,7 +906,10 @@ function roomCardHtml(r){
       <input class="label" value="${r.label}" onchange="updateRoom('${r.id}','label',this.value)">
       ${r.noRoom ? '<span class="badge" style="background:#6B6455;">Szoba nélkül</span>' : ''}
       ${group ? `<span class="badge" style="background:${group.color}">${group.name}</span>` : ''}
+      ${!expanded ? `<span class="collapsed-total">${calc.total.toLocaleString('hu-HU')} Ft</span>` : ''}
+      <button class="expand-toggle" onclick="toggleExpanded('room','${r.id}')">${expanded ? '▲' : '▼'}</button>
     </div>
+    ${!expanded ? '' : `
     <div class="room-body">
       <div class="field-row">
         <div class="field"><label>Csoport</label>
@@ -907,9 +981,10 @@ function roomCardHtml(r){
 
       ${consumptionHtml('room', r.id, r.consumption)}
       <div class="subtotal-line total"><span>Fogyasztás összesen</span><span>${calc.fogyasztas.toLocaleString('hu-HU')} Ft</span></div>
-    </div>
+    </div>`}
     <div class="room-foot">
       <button class="del" onclick="removeRoom('${r.id}')">Lezárás</button>
+      <button class="dup" onclick="duplicateRoom('${r.id}')">Másolat</button>
       <span class="rtotal">${calc.total.toLocaleString('hu-HU')} Ft</span>
     </div>
   </div>
@@ -919,16 +994,21 @@ function roomCardHtml(r){
 // ---------------- render: asztal kártya ----------------
 function tableCardHtml(t){
   const calc = calcTable(t);
+  const expanded = isExpanded('table', t.id);
   return `
   <div class="room-card">
     <div class="room-head">
       <input class="label" value="${t.label}" onchange="updateTable('${t.id}','label',this.value)">
+      ${!expanded ? `<span class="collapsed-total">${calc.total.toLocaleString('hu-HU')} Ft</span>` : ''}
+      <button class="expand-toggle" onclick="toggleExpanded('table','${t.id}')">${expanded ? '▲' : '▼'}</button>
     </div>
+    ${!expanded ? '' : `
     <div class="room-body">
       ${consumptionHtml('table', t.id, t.consumption)}
-    </div>
+    </div>`}
     <div class="room-foot">
       <button class="del" onclick="removeTable('${t.id}')">Lezárás</button>
+      <button class="dup" onclick="duplicateTable('${t.id}')">Másolat</button>
       <span class="rtotal">${calc.total.toLocaleString('hu-HU')} Ft</span>
     </div>
   </div>
@@ -941,22 +1021,27 @@ function weddingChipsHtml(w){
   if(items.length === 0) return '';
   return `<div class="chips">${items.map(c => {
     const suffix = c.multiplier === 'perFo' ? '/fő' : (c.multiplier === 'perFoOra' ? '/fő/óra' : '');
-    return `<button class="chip" onclick="quickAddWeddingPackage('${w.id}','${c.id}')">+ ${c.name} — ${c.price.toLocaleString('hu-HU')} Ft${suffix}</button>`;
+    return `<button class="chip" data-search="${c.name.toLowerCase()}" onclick="quickAddWeddingPackage('${w.id}','${c.id}')">+ ${c.name} — ${c.price.toLocaleString('hu-HU')} Ft${suffix}</button>`;
   }).join('')}</div>`;
 }
 
 function weddingCardHtml(w){
   const calc = calcWedding(w);
+  const expanded = isExpanded('wedding', w.id);
   return `
   <div class="room-card">
     <div class="room-head">
       <input class="label" value="${w.label}" onchange="updateWedding('${w.id}','label',this.value)">
+      ${!expanded ? `<span class="collapsed-total">${calc.total.toLocaleString('hu-HU')} Ft</span>` : ''}
+      <button class="expand-toggle" onclick="toggleExpanded('wedding','${w.id}')">${expanded ? '▲' : '▼'}</button>
     </div>
+    ${!expanded ? '' : `
     <div class="room-body">
       <h4 style="margin:4px 0 8px;font-size:0.8rem;color:var(--forest-2);">Esküvői tételek</h4>
       <details class="quickadd">
         <summary>Gyors hozzáadás a tételekből</summary>
-        ${weddingChipsHtml(w)}
+        <input type="text" class="chip-search" placeholder="Keresés a tételek között…" oninput="filterChips('wchips_${w.id}', this.value)">
+        <div id="wchips_${w.id}">${weddingChipsHtml(w)}</div>
       </details>
       ${w.packageItems.map(i => {
         const lineTotal = i.multiplier==='perFoOra' ? i.price*i.qty*(i.hours||1)
@@ -993,7 +1078,7 @@ function weddingCardHtml(w){
       `; }).join('')}
       <button class="add-item" onclick="addCustomWeddingPackageItem('${w.id}')">+ Egyéni tétel</button>
       <div class="subtotal-line total"><span>Esküvő összesen</span><span>${calc.pkg.toLocaleString('hu-HU')} Ft</span></div>
-    </div>
+    </div>`}
     <div class="room-foot">
       <button class="del" onclick="removeWedding('${w.id}')">Lezárás</button>
       <span class="rtotal">${calc.total.toLocaleString('hu-HU')} Ft</span>

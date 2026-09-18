@@ -50,7 +50,7 @@
   .room-card.grouped{border-left:5px solid var(--gold);}
   .room-head{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#F3EEDF;border-bottom:1px solid var(--line);flex-wrap:wrap;}
   .collapsed-total{font-weight:700;color:var(--forest);font-size:0.9rem;white-space:nowrap;margin-left:auto;}
-  .expand-toggle{background:none;border:1px solid var(--gold);color:var(--forest);border-radius:6px;width:28px;height:28px;font-size:0.85rem;cursor:pointer;flex-shrink:0;}
+  .expand-toggle{background:none;border:1px solid var(--gold);color:var(--forest);border-radius:6px;padding:5px 10px;font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
   .room-head input.label{flex:1;border:none;background:transparent;font-family:'Lora',serif;font-weight:600;font-size:1rem;color:var(--forest);padding:2px 0;}
   .room-head .badge{font-size:0.68rem;background:var(--gold);color:#fff;padding:2px 7px;border-radius:20px;white-space:nowrap;}
   .room-body{padding:12px 14px;}
@@ -453,9 +453,9 @@ async function restoreClosedItem(id, tab){
     const row = rows && rows[0];
     if(row){
       const obj = Object.assign({}, row.adat, { id: row.id });
-      if(tab === 'rooms') rooms.push(obj);
-      else if(tab === 'tables') tables.push(obj);
-      else weddings.push(obj);
+      if(tab === 'rooms'){ rooms.push(obj); setExpanded('room', obj.id, true); }
+      else if(tab === 'tables'){ tables.push(obj); setExpanded('table', obj.id, true); }
+      else { weddings.push(obj); setExpanded('wedding', obj.id, true); }
       render();
     }
   }catch(e){ console.error('Visszaállítási hiba', e); }
@@ -483,9 +483,9 @@ async function initFromSupabase(){
     if(Array.isArray(units)){
       units.forEach(u => {
         const obj = Object.assign({}, u.adat, { id: u.id });
-        if(u.tipus === 'szoba') rooms.push(obj);
-        else if(u.tipus === 'asztal') tables.push(obj);
-        else if(u.tipus === 'eskuvo') weddings.push(obj);
+        if(u.tipus === 'szoba'){ rooms.push(obj); setExpanded('room', obj.id, true); }
+        else if(u.tipus === 'asztal'){ tables.push(obj); setExpanded('table', obj.id, true); }
+        else if(u.tipus === 'eskuvo'){ weddings.push(obj); setExpanded('wedding', obj.id, true); }
       });
     }
   }catch(e){ console.error('Betöltési hiba', e); }
@@ -523,7 +523,7 @@ function duplicateTable(id){
   const copy = JSON.parse(JSON.stringify(t));
   copy.id = newId_;
   copy.label = t.label + ' (másolat)';
-  copy.consumption = (t.consumption||[]).map(it => Object.assign({}, it, { id: uid('i') }));
+  copy.consumption = (t.consumption||[]).map(it => Object.assign({}, it, { id: newId() }));
   tables.push(copy);
   setExpanded('table', newId_, true);
   render();
@@ -571,7 +571,7 @@ function duplicateRoom(id){
   copy.id = newId_;
   copy.label = r.label + ' (másolat)';
   copy.selected = false;
-  copy.consumption = (r.consumption||[]).map(it => Object.assign({}, it, { id: uid('i') }));
+  copy.consumption = (r.consumption||[]).map(it => Object.assign({}, it, { id: newId() }));
   rooms.push(copy);
   setExpanded('room', newId_, true);
   render();
@@ -590,7 +590,7 @@ function nextGroupColor(){ return GROUP_COLORS[groups.length % GROUP_COLORS.leng
 function mergeSelected(){
   const sel = rooms.filter(r=>r.selected);
   if(sel.length < 2){ alert('Jelölj ki legalább 2 szobát / vendégcsoportot az összevonáshoz.'); return; }
-  const gid = uid('g');
+  const gid = newId();
   const name = prompt('Add meg az összevont számla nevét:', 'Összevont számla ' + (groups.length+1)) || ('Összevont számla ' + (groups.length+1));
   groups.push({ id:gid, name, color: nextGroupColor() });
   sel.forEach(r => { r.groupId = gid; r.selected = false; persistUnitDebounced('room', r.id); });
@@ -648,13 +648,13 @@ function quickAddWeddingPackage(weddingId, catId){
   const w = weddings.find(w=>w.id===weddingId);
   const c = weddingCatalog.find(c=>c.id===catId);
   const existing = w.packageItems.find(i => i.name.trim().toLowerCase() === c.name.trim().toLowerCase());
-  if(existing){ existing.qty += 1; } else { w.packageItems.push({ id: uid('pi'), name:c.name, price:c.price, multiplier:c.multiplier, hours:c.hours||1, nights:c.nights||1, qty:1 }); }
+  if(existing){ existing.qty += 1; } else { w.packageItems.push({ id: newId(), name:c.name, price:c.price, multiplier:c.multiplier, hours:c.hours||1, nights:c.nights||1, qty:1 }); }
   render();
   persistUnitDebounced('wedding', weddingId);
 }
 function addCustomWeddingPackageItem(weddingId){
   const w = weddings.find(w=>w.id===weddingId);
-  w.packageItems.push({ id: uid('pi'), name:'', price:0, multiplier:'flat', hours:1, nights:1, qty:1 });
+  w.packageItems.push({ id: newId(), name:'', price:0, multiplier:'flat', hours:1, nights:1, qty:1 });
   render();
   persistUnitDebounced('wedding', weddingId);
 }
@@ -688,13 +688,13 @@ function quickAddCatalogItem(kind, id, catId){
   const owner = getConsumptionOwner(kind, id);
   const c = catalog.find(c=>c.id===catId);
   const existing = owner.consumption.find(i => i.name.trim().toLowerCase() === c.name.trim().toLowerCase());
-  if(existing){ existing.qty += 1; } else { owner.consumption.push({ id: uid('i'), name:c.name, qty:1, price:c.price }); }
+  if(existing){ existing.qty += 1; } else { owner.consumption.push({ id: newId(), name:c.name, qty:1, price:c.price }); }
   render();
   persistUnitDebounced(kind, id);
 }
 function addItem(kind, id){
   const owner = getConsumptionOwner(kind, id);
-  owner.consumption.push({ id: uid('i'), name:'', qty:1, price:0 });
+  owner.consumption.push({ id: newId(), name:'', qty:1, price:0 });
   render();
   persistUnitDebounced(kind, id);
 }
@@ -719,7 +719,7 @@ function removeItem(kind, id, itemId){
 }
 
 // ---------------- árlista (catalog) kezelés ----------------
-function addCatalogItem(){ catalog.push({ id: uid('cat'), category:'egyeb', name:'', price:0 }); render(); saveSettingsDebounced(); }
+function addCatalogItem(){ catalog.push({ id: newId(), category:'egyeb', name:'', price:0 }); render(); saveSettingsDebounced(); }
 function updateCatalogItem(id, field, value){
   const c = catalog.find(c=>c.id===id);
   if(field==='price') value = parseFloat(value)||0;
@@ -728,7 +728,7 @@ function updateCatalogItem(id, field, value){
 }
 function removeCatalogItem(id){ catalog = catalog.filter(c=>c.id!==id); render(); saveSettingsDebounced(); }
 
-function addWeddingCatalogItem(){ weddingCatalog.push({ id: uid('wcat'), name:'', price:0, multiplier:'perFo', csoport:'kiegeszito', hours:1 }); render(); saveSettingsDebounced(); }
+function addWeddingCatalogItem(){ weddingCatalog.push({ id: newId(), name:'', price:0, multiplier:'perFo', csoport:'kiegeszito', hours:1 }); render(); saveSettingsDebounced(); }
 function updateWeddingCatalogItem(id, field, value){
   const c = weddingCatalog.find(c=>c.id===id);
   if(field==='price' || field==='hours') value = parseFloat(value)||0;
@@ -907,7 +907,7 @@ function roomCardHtml(r){
       ${r.noRoom ? '<span class="badge" style="background:#6B6455;">Szoba nélkül</span>' : ''}
       ${group ? `<span class="badge" style="background:${group.color}">${group.name}</span>` : ''}
       ${!expanded ? `<span class="collapsed-total">${calc.total.toLocaleString('hu-HU')} Ft</span>` : ''}
-      <button class="expand-toggle" onclick="toggleExpanded('room','${r.id}')">${expanded ? '▲' : '▼'}</button>
+      <button class="expand-toggle" onclick="toggleExpanded('room','${r.id}')">${expanded ? '▲ Bezár' : '▼ Részletek'}</button>
     </div>
     ${!expanded ? '' : `
     <div class="room-body">
@@ -1000,7 +1000,7 @@ function tableCardHtml(t){
     <div class="room-head">
       <input class="label" value="${t.label}" onchange="updateTable('${t.id}','label',this.value)">
       ${!expanded ? `<span class="collapsed-total">${calc.total.toLocaleString('hu-HU')} Ft</span>` : ''}
-      <button class="expand-toggle" onclick="toggleExpanded('table','${t.id}')">${expanded ? '▲' : '▼'}</button>
+      <button class="expand-toggle" onclick="toggleExpanded('table','${t.id}')">${expanded ? '▲ Bezár' : '▼ Részletek'}</button>
     </div>
     ${!expanded ? '' : `
     <div class="room-body">
@@ -1033,7 +1033,7 @@ function weddingCardHtml(w){
     <div class="room-head">
       <input class="label" value="${w.label}" onchange="updateWedding('${w.id}','label',this.value)">
       ${!expanded ? `<span class="collapsed-total">${calc.total.toLocaleString('hu-HU')} Ft</span>` : ''}
-      <button class="expand-toggle" onclick="toggleExpanded('wedding','${w.id}')">${expanded ? '▲' : '▼'}</button>
+      <button class="expand-toggle" onclick="toggleExpanded('wedding','${w.id}')">${expanded ? '▲ Bezár' : '▼ Részletek'}</button>
     </div>
     ${!expanded ? '' : `
     <div class="room-body">

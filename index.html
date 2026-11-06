@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#F3EFE4; --paper:#FBF9F3; --forest:#26352B; --forest-2:#3C4F3F;
@@ -103,6 +104,21 @@
   .hours-field{max-width:150px;margin:0 0 10px;}
   .hours-field label{font-size:0.68rem;color:var(--ink-soft);}
   .hours-field input{width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.82rem;}
+  .tab-pult-badge{display:inline-block;background:var(--danger);color:#fff;border-radius:20px;padding:1px 6px;font-size:0.68rem;font-weight:700;margin-left:5px;vertical-align:middle;}
+  .item-block.pending{border-color:var(--gold);background:#FFF8EA;}
+  .pending-badge{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--gold-soft);color:var(--forest-2);font-size:0.74rem;font-weight:600;border-radius:6px;padding:5px 8px;margin-bottom:7px;}
+  .pending-badge .mark-ready{background:var(--forest);color:#fff;border:none;border-radius:6px;padding:4px 9px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+  .pult-card{background:var(--paper);border:1px solid var(--line);border-left:6px solid var(--gold);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;}
+  .pult-card.late{background:#FBECE8;border-left-color:var(--danger);}
+  .pult-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .pult-table{font-family:'Lora',serif;font-weight:700;font-size:1.05rem;}
+  .pult-time{font-size:0.78rem;color:var(--ink-soft);font-weight:600;}
+  .pult-card.late .pult-time{color:var(--danger);}
+  .pult-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px dashed var(--line);}
+  .pult-item:first-of-type{border-top:none;}
+  .pult-item-name{font-size:0.9rem;font-weight:600;color:var(--ink);}
+  .pult-done{background:var(--forest);color:#fff;border:none;border-radius:6px;padding:6px 11px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+  .pult-all{display:block;width:100%;margin-top:8px;background:none;border:1px dashed var(--forest-2);color:var(--forest-2);border-radius:6px;padding:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
 </style>
 </head>
 <body>
@@ -114,6 +130,7 @@
     <button class="tab-btn active" id="tabRoomsBtn" onclick="setTab('rooms')">Szoba</button>
     <button class="tab-btn" id="tabTablesBtn" onclick="setTab('tables')">Étterem</button>
     <button class="tab-btn" id="tabWeddingBtn" onclick="setTab('wedding')">Esküvő</button>
+    <button class="tab-btn" id="tabPultBtn" onclick="setTab('pult')">Pult<span id="pultBadge" class="tab-pult-badge" style="display:none;"></span></button>
   </div>
 </header>
 
@@ -183,6 +200,14 @@
 
   <button class="add-item" onclick="toggleClosedView('wedding')" id="closedToggle_wedding">Lezárt tételek megtekintése</button>
   <div id="closedWeddingContainer" style="display:none;margin-top:10px;"></div>
+</div>
+
+<!-- ===================== PULT FÜL (élő rendelések) ===================== -->
+<div id="pultPage" style="display:none;">
+  <div class="note">
+    Itt látja a pultos/felszolgáló minden asztal, szoba és esküvő <strong>még ki nem adott</strong> rendelését, időrendben. Amint a pincér hozzáad egy tételt az itallapból, az azonnal megjelenik itt — minden csatlakoztatott telefonon. Koppints a "Kiadva" gombra, ha elkészült és átadtad — ekkor kerül rá a vendég számlájára.
+  </div>
+  <div id="pultContainer"></div>
 </div>
 
 </main>
@@ -279,6 +304,7 @@ let catalog = [
   { id:'et6', category:'etel', name:'Desszert — Csokoládé brownie eper velő', price:2000 },
   { id:'et7', category:'etel', name:'Desszert — Almás rétes vanília öntet', price:2000 },
   { id:'et8', category:'etel', name:'Napi menü (ebéd)', price:0 },
+  { id:'et9', category:'etel', name:'Libanapi svédasztal', price:11900 },
   { id:'e1',  category:'egyeb', name:'Zsíroskenyér', price:0 }
 ];
 
@@ -536,9 +562,11 @@ function setTab(tab){
   document.getElementById('roomsPage').style.display = tab === 'rooms' ? 'block' : 'none';
   document.getElementById('tablesPage').style.display = tab === 'tables' ? 'block' : 'none';
   document.getElementById('weddingPage').style.display = tab === 'wedding' ? 'block' : 'none';
+  document.getElementById('pultPage').style.display = tab === 'pult' ? 'block' : 'none';
   document.getElementById('tabRoomsBtn').classList.toggle('active', tab === 'rooms');
   document.getElementById('tabTablesBtn').classList.toggle('active', tab === 'tables');
   document.getElementById('tabWeddingBtn').classList.toggle('active', tab === 'wedding');
+  document.getElementById('tabPultBtn').classList.toggle('active', tab === 'pult');
   render();
 }
 
@@ -687,17 +715,92 @@ function getConsumptionOwner(kind, id){
 function quickAddCatalogItem(kind, id, catId){
   const owner = getConsumptionOwner(kind, id);
   const c = catalog.find(c=>c.id===catId);
-  const existing = owner.consumption.find(i => i.name.trim().toLowerCase() === c.name.trim().toLowerCase());
-  if(existing){ existing.qty += 1; } else { owner.consumption.push({ id: newId(), name:c.name, qty:1, price:c.price }); }
+  const existing = owner.consumption.find(i => i.name.trim().toLowerCase() === c.name.trim().toLowerCase() && i.allapot === 'varakozik');
+  if(existing){ existing.qty += 1; existing.rendelve_at = Date.now(); }
+  else { owner.consumption.push({ id: newId(), name:c.name, qty:1, price:c.price, allapot:'varakozik', rendelve_at: Date.now() }); }
   render();
   persistUnitDebounced(kind, id);
 }
 function addItem(kind, id){
   const owner = getConsumptionOwner(kind, id);
-  owner.consumption.push({ id: newId(), name:'', qty:1, price:0 });
+  owner.consumption.push({ id: newId(), name:'', qty:1, price:0, allapot:'kesz' });
   render();
   persistUnitDebounced(kind, id);
 }
+function markItemReady(kind, id, itemId){
+  const owner = getConsumptionOwner(kind, id);
+  if(!owner) return;
+  const it = owner.consumption.find(i=>i.id===itemId);
+  if(!it) return;
+  it.allapot = 'kesz';
+  it.kiadva_at = Date.now();
+  render();
+  persistUnitDebounced(kind, id);
+}
+function markAllReady(kind, id){
+  const owner = getConsumptionOwner(kind, id);
+  if(!owner) return;
+  owner.consumption.forEach(i => { if(i.allapot === 'varakozik'){ i.allapot = 'kesz'; i.kiadva_at = Date.now(); } });
+  render();
+  persistUnitDebounced(kind, id);
+}
+
+// ---------------- Pult (élő rendelések) ----------------
+function pultOwnerColor(kind, obj, idx){
+  if(kind === 'room'){ const g = groups.find(g=>g.id===obj.groupId); return g ? g.color : '#6B6455'; }
+  if(kind === 'table'){ return GROUP_COLORS[idx % GROUP_COLORS.length]; }
+  return '#8E5572';
+}
+function pultPendingOrders(){
+  const out = [];
+  rooms.forEach((r,idx) => {
+    const pend = (r.consumption||[]).filter(i=>i.allapot==='varakozik');
+    if(pend.length) out.push({ kind:'room', id:r.id, label:r.label, color:pultOwnerColor('room', r, idx), items:pend, earliest: Math.min(...pend.map(i=>i.rendelve_at||Date.now())) });
+  });
+  tables.forEach((t,idx) => {
+    const pend = (t.consumption||[]).filter(i=>i.allapot==='varakozik');
+    if(pend.length) out.push({ kind:'table', id:t.id, label:t.label, color:pultOwnerColor('table', t, idx), items:pend, earliest: Math.min(...pend.map(i=>i.rendelve_at||Date.now())) });
+  });
+  weddings.forEach((w,idx) => {
+    const pend = (w.consumption||[]).filter(i=>i.allapot==='varakozik');
+    if(pend.length) out.push({ kind:'wedding', id:w.id, label:w.label, color:pultOwnerColor('wedding', w, idx), items:pend, earliest: Math.min(...pend.map(i=>i.rendelve_at||Date.now())) });
+  });
+  out.sort((a,b) => a.earliest - b.earliest);
+  return out;
+}
+function pultCardHtml(order){
+  const mins = Math.max(0, Math.round((Date.now() - order.earliest)/60000));
+  const late = mins >= 5;
+  const itemsHtml = order.items.map(i => `
+    <div class="pult-item">
+      <span class="pult-item-name">${i.qty}× ${i.name}</span>
+      <button class="pult-done" onclick="markItemReady('${order.kind}','${order.id}','${i.id}')">✓ Kiadva</button>
+    </div>`).join('');
+  return `
+    <div class="pult-card ${late ? 'late' : ''}" style="border-left-color:${order.color}">
+      <div class="pult-head">
+        <span class="pult-table" style="color:${order.color}">${order.label}</span>
+        <span class="pult-time">${mins} perce</span>
+      </div>
+      ${itemsHtml}
+      ${order.items.length > 1 ? `<button class="pult-all" onclick="markAllReady('${order.kind}','${order.id}')">Mind kiadva (${order.items.length} tétel)</button>` : ''}
+    </div>`;
+}
+function renderPult(){
+  const container = document.getElementById('pultContainer');
+  if(!container) return;
+  const orders = pultPendingOrders();
+  container.innerHTML = orders.length === 0
+    ? `<div class="empty-state">Nincs függő rendelés — minden kiadva. ✓</div>`
+    : orders.map(pultCardHtml).join('');
+  const totalPending = orders.reduce((s,o)=>s+o.items.length,0);
+  const badge = document.getElementById('pultBadge');
+  if(badge){
+    if(totalPending > 0){ badge.style.display='inline-block'; badge.textContent = totalPending; }
+    else badge.style.display = 'none';
+  }
+}
+setInterval(() => { renderPult(); }, 20000);
 function updateItem(kind, id, itemId, field, value){
   const owner = getConsumptionOwner(kind, id);
   const it = owner.consumption.find(i=>i.id===itemId);
@@ -874,7 +977,8 @@ function consumptionHtml(kind, id, consumption){
         <div id="${chipsContainerId}">${grouped}</div>
       </details>
       ${consumption.map(i => `
-        <div class="item-block">
+        <div class="item-block ${i.allapot==='varakozik' ? 'pending' : ''}">
+          ${i.allapot==='varakozik' ? `<div class="pending-badge">⏳ Rendelve — vár a pultra <button class="mark-ready" onclick="markItemReady('${kind}','${id}','${i.id}')">✓ Kész</button></div>` : ''}
           <div class="item-row-name">
             <input placeholder="Tétel neve" value="${i.name}" onchange="updateItem('${kind}','${id}','${i.id}','name',this.value)">
             <button class="rm" onclick="removeItem('${kind}','${id}','${i.id}')">✕</button>
@@ -1092,6 +1196,7 @@ function render(){
   renderSettings();
   renderCatalogEditor();
   renderWeddingCatalogEditor();
+  renderPult();
 
   document.getElementById('groupsContainer').innerHTML = '';
 
@@ -1137,15 +1242,61 @@ function render(){
     document.getElementById('grandTotal').textContent = grand.toLocaleString('hu-HU') + ' Ft';
     document.getElementById('countLabel').textContent = tables.length + ' asztal';
     document.getElementById('summaryLabel').textContent = 'Mindösszesen (étterem)';
-  } else {
+  } else if(currentTab === 'wedding'){
     const grand = weddings.reduce((s,w) => s + calcWedding(w).total, 0);
     document.getElementById('grandTotal').textContent = grand.toLocaleString('hu-HU') + ' Ft';
     document.getElementById('countLabel').textContent = weddings.length + ' esküvő';
     document.getElementById('summaryLabel').textContent = 'Mindösszesen (esküvő)';
+  } else {
+    const orders = pultPendingOrders();
+    const totalItems = orders.reduce((s,o)=>s+o.items.length,0);
+    document.getElementById('grandTotal').textContent = totalItems;
+    document.getElementById('countLabel').textContent = orders.length + ' asztal/szoba vár';
+    document.getElementById('summaryLabel').textContent = 'Függő tétel a pulton';
   }
 }
 
 initFromSupabase();
+
+// ---------------- valós idejű (Realtime) szinkron ----------------
+function applyRealtimePayload(payload){
+  const row = payload.new || payload.old;
+  if(!row || !row.id) return;
+  const arrFor = (tipus) => tipus==='szoba' ? rooms : (tipus==='asztal' ? tables : weddings);
+  const kindFor = (tipus) => tipus==='szoba' ? 'room' : (tipus==='asztal' ? 'table' : 'wedding');
+
+  if(payload.eventType === 'DELETE'){
+    ['szoba','asztal','eskuvo'].forEach(t => {
+      const arr = arrFor(t);
+      const i = arr.findIndex(x => x.id === row.id);
+      if(i > -1) arr.splice(i, 1);
+    });
+    render();
+    return;
+  }
+
+  const tipus = row.tipus;
+  if(!tipus) return;
+  const arr = arrFor(tipus);
+  const idx = arr.findIndex(x => x.id === row.id);
+
+  if(row.statusz === 'lezart'){
+    if(idx > -1) arr.splice(idx, 1);
+  } else {
+    const obj = Object.assign({}, row.adat, { id: row.id });
+    if(idx > -1){ arr[idx] = obj; }
+    else { arr.push(obj); setExpanded(kindFor(tipus), obj.id, true); }
+  }
+  render();
+}
+try{
+  if(window.supabase && typeof window.supabase.createClient === 'function'){
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    sbClient.channel('elszamolo-live')
+      .on('postgres_changes', { event:'*', schema:'public', table:'elszamolo_egysegek' }, applyRealtimePayload)
+      .subscribe();
+  }
+}catch(e){ console.error('Realtime kapcsolódási hiba', e); }
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {

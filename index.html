@@ -50,9 +50,9 @@
   .room-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;}
   .room-card.grouped{border-left:5px solid var(--gold);}
   .room-head{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#F3EEDF;border-bottom:1px solid var(--line);flex-wrap:wrap;}
-  .collapsed-total{font-weight:700;color:var(--forest);font-size:0.9rem;white-space:nowrap;margin-left:auto;}
-  .expand-toggle{background:none;border:1px solid var(--gold);color:var(--forest);border-radius:6px;padding:5px 10px;font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
-  .room-head input.label{flex:1;border:none;background:transparent;font-family:'Lora',serif;font-weight:600;font-size:1rem;color:var(--forest);padding:2px 0;}
+  .collapsed-total{font-weight:700;color:var(--forest);font-size:1.02rem;white-space:nowrap;margin-left:auto;}
+  .expand-toggle{background:none;border:1px solid var(--gold);color:var(--forest);border-radius:6px;padding:6px 11px;font-size:0.86rem;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
+  .room-head input.label{flex:1;border:none;background:transparent;font-family:'Lora',serif;font-weight:600;font-size:1.12rem;color:var(--forest);padding:2px 0;}
   .room-head .badge{font-size:0.68rem;background:var(--gold);color:#fff;padding:2px 7px;border-radius:20px;white-space:nowrap;}
   .room-body{padding:12px 14px;}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:10px;}
@@ -64,14 +64,14 @@
   .field select,.field input{padding:8px;border:1px solid var(--line);border-radius:7px;font-size:0.88rem;font-family:'Inter',sans-serif;background:#fff;width:100%;min-width:0;}
   .checkline{display:flex;align-items:center;gap:7px;font-size:0.83rem;margin:6px 0 4px;}
   .checkline input{width:16px;height:16px;}
-  .subtotal-line{display:flex;justify-content:space-between;font-size:0.83rem;padding:3px 0;color:var(--ink-soft);}
-  .subtotal-line.total{color:var(--ink);font-weight:700;border-top:1px dashed var(--line);margin-top:6px;padding-top:7px;font-size:0.9rem;}
+  .subtotal-line{display:flex;justify-content:space-between;font-size:0.95rem;padding:4px 0;color:var(--ink-soft);}
+  .subtotal-line.total{color:var(--ink);font-weight:700;border-top:1px dashed var(--line);margin-top:6px;padding-top:8px;font-size:1.05rem;}
   .consumption{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;}
   .consumption h4{margin:0 0 8px;font-size:0.8rem;color:var(--forest-2);font-weight:700;}
   details.quickadd summary{cursor:pointer;font-size:0.8rem;color:var(--forest-2);font-weight:600;margin-bottom:8px;}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
-  .chip-search{width:100%;padding:8px;margin-bottom:8px;border:1px solid var(--gold);border-radius:7px;font-size:0.85rem;font-family:'Inter',sans-serif;box-sizing:border-box;}
-  .chip{background:#fff;border:1px solid var(--gold);color:var(--forest);border-radius:20px;padding:6px 11px;font-size:0.76rem;cursor:pointer;font-family:'Inter',sans-serif;}
+  .chip-search{width:100%;padding:10px;margin-bottom:8px;border:1px solid var(--gold);border-radius:7px;font-size:0.95rem;font-family:'Inter',sans-serif;box-sizing:border-box;}
+  .chip{background:#fff;border:1px solid var(--gold);color:var(--forest);border-radius:20px;padding:8px 13px;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
   .chip:active{background:var(--gold-soft);}
   .grouplbl{font-size:0.72rem;color:var(--ink-soft);margin:8px 0 4px;}
   .item-row{display:grid;grid-template-columns:1fr 46px 66px 24px;gap:6px;margin-bottom:6px;align-items:center;}
@@ -79,16 +79,16 @@
   .item-row .rm{background:none;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;text-align:center;}
   .item-block{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px;background:#fff;}
   .item-row-name{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
-  .item-row-name input{flex:1;min-width:0;padding:7px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;font-family:'Inter',sans-serif;}
-  .item-row-name .rm{flex-shrink:0;background:none;border:none;color:var(--danger);font-size:1.15rem;cursor:pointer;padding:2px 4px;}
-  .item-row-calc{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:0.82rem;color:var(--ink-soft);}
-  .item-row-calc input{width:56px;min-width:0;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;font-family:'Inter',sans-serif;text-align:center;}
+  .item-row-name input{flex:1;min-width:0;padding:9px;border:1px solid var(--line);border-radius:6px;font-size:1rem;font-weight:600;font-family:'Inter',sans-serif;}
+  .item-row-name .rm{flex-shrink:0;background:none;border:none;color:var(--danger);font-size:1.25rem;cursor:pointer;padding:2px 4px;}
+  .item-row-calc{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:0.92rem;color:var(--ink-soft);}
+  .item-row-calc input{width:62px;min-width:0;padding:7px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;font-family:'Inter',sans-serif;text-align:center;}
   .item-row-calc .op{white-space:nowrap;}
-  .item-row-calc .linetotal{margin-left:auto;font-weight:700;color:var(--forest);white-space:nowrap;}
+  .item-row-calc .linetotal{margin-left:auto;font-weight:700;color:var(--forest);font-size:1rem;white-space:nowrap;}
   .room-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#F3EEDF;border-top:1px solid var(--line);}
   .room-foot .del{background:none;border:none;color:var(--danger);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;}
   .room-foot .dup{background:none;border:none;color:var(--forest-2);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;margin-left:10px;}
-  .room-foot .rtotal{font-weight:700;color:var(--forest);font-size:0.98rem;}
+  .room-foot .rtotal{font-weight:700;color:var(--forest);font-size:1.1rem;}
   .group-block{background:#EFE6CE;border:1px solid var(--gold);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;}
   .group-add-row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;}
   .group-add-row .add-item{flex:1;min-width:140px;margin-top:0;background:#fff;}
@@ -106,19 +106,19 @@
   .hours-field input{width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:0.82rem;}
   .tab-pult-badge{display:inline-block;background:var(--danger);color:#fff;border-radius:20px;padding:1px 6px;font-size:0.68rem;font-weight:700;margin-left:5px;vertical-align:middle;}
   .item-block.pending{border-color:var(--gold);background:#FFF8EA;}
-  .pending-badge{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--gold-soft);color:var(--forest-2);font-size:0.74rem;font-weight:600;border-radius:6px;padding:5px 8px;margin-bottom:7px;}
-  .pending-badge .mark-ready{background:var(--forest);color:#fff;border:none;border-radius:6px;padding:4px 9px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
-  .pult-card{background:var(--paper);border:1px solid var(--line);border-left:6px solid var(--gold);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;}
+  .pending-badge{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--gold-soft);color:var(--forest-2);font-size:0.86rem;font-weight:700;border-radius:6px;padding:6px 9px;margin-bottom:7px;}
+  .pending-badge .mark-ready{background:var(--forest);color:#fff;border:none;border-radius:6px;padding:5px 11px;font-size:0.84rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+  .pult-card{background:var(--paper);border:1px solid var(--line);border-left:6px solid var(--gold);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;}
   .pult-card.late{background:#FBECE8;border-left-color:var(--danger);}
-  .pult-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-  .pult-table{font-family:'Lora',serif;font-weight:700;font-size:1.05rem;}
-  .pult-time{font-size:0.78rem;color:var(--ink-soft);font-weight:600;}
+  .pult-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+  .pult-table{font-family:'Lora',serif;font-weight:700;font-size:1.3rem;}
+  .pult-time{font-size:0.92rem;color:var(--ink-soft);font-weight:700;}
   .pult-card.late .pult-time{color:var(--danger);}
-  .pult-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px dashed var(--line);}
+  .pult-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px dashed var(--line);}
   .pult-item:first-of-type{border-top:none;}
-  .pult-item-name{font-size:0.9rem;font-weight:600;color:var(--ink);}
-  .pult-done{background:var(--forest);color:#fff;border:none;border-radius:6px;padding:6px 11px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
-  .pult-all{display:block;width:100%;margin-top:8px;background:none;border:1px dashed var(--forest-2);color:var(--forest-2);border-radius:6px;padding:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+  .pult-item-name{font-size:1.1rem;font-weight:700;color:var(--ink);}
+  .pult-done{background:var(--forest);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+  .pult-all{display:block;width:100%;margin-top:9px;background:none;border:1px dashed var(--forest-2);color:var(--forest-2);border-radius:6px;padding:9px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
 </style>
 </head>
 <body>
@@ -402,6 +402,7 @@ function persistUnitDebounced(kind, id){
   const key = kind + ':' + id;
   clearTimeout(_unitTimers[key]);
   _unitTimers[key] = setTimeout(() => {
+    delete _unitTimers[key];
     let owner, tipus;
     if(kind === 'room'){ owner = rooms.find(r=>r.id===id); tipus='szoba'; }
     else if(kind === 'table'){ owner = tables.find(t=>t.id===id); tipus='asztal'; }
@@ -1259,15 +1260,19 @@ function render(){
 initFromSupabase();
 
 // ---------------- valós idejű (Realtime) szinkron ----------------
+function kindForTipus(tipus){ return tipus==='szoba' ? 'room' : (tipus==='asztal' ? 'table' : 'wedding'); }
+function arrForTipus(tipus){ return tipus==='szoba' ? rooms : (tipus==='asztal' ? tables : weddings); }
+
 function applyRealtimePayload(payload){
   const row = payload.new || payload.old;
   if(!row || !row.id) return;
-  const arrFor = (tipus) => tipus==='szoba' ? rooms : (tipus==='asztal' ? tables : weddings);
-  const kindFor = (tipus) => tipus==='szoba' ? 'room' : (tipus==='asztal' ? 'table' : 'wedding');
 
   if(payload.eventType === 'DELETE'){
     ['szoba','asztal','eskuvo'].forEach(t => {
-      const arr = arrFor(t);
+      const kind = kindForTipus(t);
+      // ha pont most van el nem küldött helyi módosításunk ezen az egységen, ne töröljük ki alóla
+      if(_unitTimers[kind + ':' + row.id]) return;
+      const arr = arrForTipus(t);
       const i = arr.findIndex(x => x.id === row.id);
       if(i > -1) arr.splice(i, 1);
     });
@@ -1277,7 +1282,18 @@ function applyRealtimePayload(payload){
 
   const tipus = row.tipus;
   if(!tipus) return;
-  const arr = arrFor(tipus);
+  const kind = kindForTipus(tipus);
+  const timerKey = kind + ':' + row.id;
+
+  // KRITIKUS VÉDELEM: ha ennek az egységnek épp most van friss, el nem küldött
+  // helyi módosítása (fut a mentési debounce), NE írjuk felül a helyi állapotot
+  // egy — ehhez képest elavult — távoli pillanatképpel. A saját mentésünk pár
+  // száz ms múlva úgyis kiküldi a frisset, és a visszajövő realtime visszaigazolás
+  // már konzisztens lesz. Enélkül egy másik telefonról épp akkor beérkező esemény
+  // nyomtalanul kitörölhetné a most felvitt tételt, mielőtt az elmentődne.
+  if(_unitTimers[timerKey]) return;
+
+  const arr = arrForTipus(tipus);
   const idx = arr.findIndex(x => x.id === row.id);
 
   if(row.statusz === 'lezart'){
@@ -1285,18 +1301,51 @@ function applyRealtimePayload(payload){
   } else {
     const obj = Object.assign({}, row.adat, { id: row.id });
     if(idx > -1){ arr[idx] = obj; }
-    else { arr.push(obj); setExpanded(kindFor(tipus), obj.id, true); }
+    else { arr.push(obj); setExpanded(kind, obj.id, true); }
   }
   render();
 }
+
+let _realtimeConnected = false;
 try{
   if(window.supabase && typeof window.supabase.createClient === 'function'){
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     sbClient.channel('elszamolo-live')
       .on('postgres_changes', { event:'*', schema:'public', table:'elszamolo_egysegek' }, applyRealtimePayload)
-      .subscribe();
+      .subscribe((status) => { _realtimeConnected = (status === 'SUBSCRIBED'); });
   }
 }catch(e){ console.error('Realtime kapcsolódási hiba', e); }
+
+// ---------------- biztonsági háló: időszakos teljes újraszinkron ----------------
+// Akkor is magától helyreáll minden telefon, ha a realtime websocket elakadna
+// (gyenge wifi/mobilnet a rendezvényen) — legfeljebb ~45 másodperc csúszással.
+async function periodicResync(){
+  try{
+    const res = await fetch(SUPABASE_URL + '/rest/v1/elszamolo_egysegek?statusz=eq.aktiv&select=id,tipus,adat', { headers: sbHeaders() });
+    const units = await res.json();
+    if(!Array.isArray(units)) return;
+    const seen = { szoba:new Set(), asztal:new Set(), eskuvo:new Set() };
+    units.forEach(u => {
+      if(!u.tipus || !seen[u.tipus]) return;
+      seen[u.tipus].add(u.id);
+      const kind = kindForTipus(u.tipus);
+      if(_unitTimers[kind + ':' + u.id]) return; // friss, el nem küldött helyi módosítás védve
+      const arr = arrForTipus(u.tipus);
+      const idx = arr.findIndex(x => x.id === u.id);
+      const obj = Object.assign({}, u.adat, { id: u.id });
+      if(idx > -1) arr[idx] = obj; else { arr.push(obj); setExpanded(kind, obj.id, true); }
+    });
+    ['szoba','asztal','eskuvo'].forEach(tipus => {
+      const kind = kindForTipus(tipus);
+      const arr = arrForTipus(tipus);
+      for(let i = arr.length - 1; i >= 0; i--){
+        if(!seen[tipus].has(arr[i].id) && !_unitTimers[kind + ':' + arr[i].id]) arr.splice(i, 1);
+      }
+    });
+    render();
+  }catch(e){ console.error('Újraszinkronizálási hiba', e); }
+}
+setInterval(periodicResync, 45000);
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
